@@ -26,10 +26,26 @@ DATASETS = {
     },
 }
 
+
+# Diagnostics produits par le notebook, consultables sans réentraîner de modèle.
+for name, description in {
+    "evaluation_k": "Métriques de clustering pour chaque valeur de k.",
+    "choix_k": "Choix statistiques et choix commercial de k.",
+    "profils_k_candidats": "Profils RFM des segmentations candidates.",
+    "comparaison_k4_k5": "Correspondance des clients entre k=4 et k=5.",
+    "audit_retours": "Périmètre et bilan monétaire des retours.",
+    "sensibilite_retours": "Comparaison des partitions achats positifs et montant net.",
+    "migrations_retours": "Migrations après appariement optimal des groupes.",
+    "retours_par_segment": "Effet des retours par segment initial.",
+    "profils_politiques_retours": "Profils des groupes selon la politique de retours.",
+    "stabilite_sensibilite_retours": "Sensibilité aux retours sur plusieurs graines.",
+}.items():
+    DATASETS[name] = {"file": DATA_DIR / f"{name}.csv", "description": description}
+
 app = FastAPI(
     title="API Segmentation Marketing",
     description="Expose les resultats RFM/segments en JSON pour n8n et les futurs assistants marketing.",
-    version="0.1.0",
+    version="0.2.0",
 )
 
 
@@ -115,15 +131,35 @@ def build_statistics(rows: list[dict[str, Any]]) -> dict[str, Any]:
     return stats
 
 
+def read_dataset(dataset_name: str) -> list[dict[str, Any]]:
+    try:
+        return load_dataset(dataset_name)
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Fichier introuvable: {DATASETS[dataset_name]['file'].name}",
+        ) from exc
+
+
+def resolve_segment(segment: str) -> str:
+    normalized = segment.strip().casefold()
+    for row in read_dataset("tableau_synthese_segments"):
+        name = row["Segment"]
+        if name.casefold() == normalized:
+            return name
+    raise HTTPException(status_code=404, detail=f"Segment inconnu: {segment}")
+
+
 def dataset_response(
     dataset_name: str,
     limit: int | None,
     offset: int,
+    segment: str | None = None,
 ) -> dict[str, Any]:
-    try:
-        rows = load_dataset(dataset_name)
-    except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=f"Fichier introuvable: {exc}") from exc
+    rows = read_dataset(dataset_name)
+    if segment is not None:
+        canonical_segment = resolve_segment(segment)
+        rows = [row for row in rows if row.get("segment_name") == canonical_segment]
 
     end = None if limit is None else offset + limit
     return {
@@ -149,6 +185,11 @@ def root() -> dict[str, Any]:
             "/recommandations-segments",
             "/rfm-clients-segments",
             "/tableau-synthese-segments",
+            "/evaluation-k",
+            "/choix-k",
+            "/comparaison-segmentations",
+            "/sensibilite-retours",
+            "/segments/{segment}",
         ],
     }
 
@@ -163,10 +204,11 @@ def get_recommandations_segments(
 
 @app.get("/rfm-clients-segments")
 def get_rfm_clients_segments(
+    segment: str | None = Query(default=None, min_length=1, description="Nom du segment ; casse ignorée, accents conservés."),
     limit: int | None = Query(default=None, ge=1),
     offset: int = Query(default=0, ge=0),
 ) -> dict[str, Any]:
-    return dataset_response("rfm_clients_segments", limit, offset)
+    return dataset_response("rfm_clients_segments", limit, offset, segment=segment)
 
 
 @app.get("/tableau-synthese-segments")
@@ -175,3 +217,62 @@ def get_tableau_synthese_segments(
     offset: int = Query(default=0, ge=0),
 ) -> dict[str, Any]:
     return dataset_response("tableau_synthese_segments", limit, offset)
+
+
+@app.get("/evaluation-k")
+def get_evaluation_k(
+    limit: int | None = Query(default=None, ge=1),
+    offset: int = Query(default=0, ge=0),
+) -> dict[str, Any]:
+    return dataset_response("evaluation_k", limit, offset)
+
+
+@app.get("/choix-k")
+def get_choix_k(
+    limit: int | None = Query(default=None, ge=1),
+    offset: int = Query(default=0, ge=0),
+) -> dict[str, Any]:
+    return dataset_response("choix_k", limit, offset)
+
+
+def grouped_response(sections: dict[str, str]) -> dict[str, Any]:
+    # Chaque section conserve son fichier source et expose toute sa petite table.
+    return {key: dataset_response(dataset, None, 0) for key, dataset in sections.items()}
+
+
+@app.get("/comparaison-segmentations")
+def get_comparaison_segmentations() -> dict[str, Any]:
+    return grouped_response({
+        "profils": "profils_k_candidats",
+        "correspondance_k4_k5": "comparaison_k4_k5",
+    })
+
+
+@app.get("/sensibilite-retours")
+def get_sensibilite_retours() -> dict[str, Any]:
+    return grouped_response({
+        "audit": "audit_retours",
+        "comparaison": "sensibilite_retours",
+        "migrations": "migrations_retours",
+        "par_segment": "retours_par_segment",
+        "profils": "profils_politiques_retours",
+        "stabilite": "stabilite_sensibilite_retours",
+    })
+
+
+@app.get("/segments/{segment}")
+def get_segment(segment: str) -> dict[str, Any]:
+    canonical_segment = resolve_segment(segment)
+    sections = {
+        "synthese": ("tableau_synthese_segments", "Segment"),
+        "recommandation": ("recommandations_segments", "Segment"),
+        "effet_retours": ("retours_par_segment", "Segment_gross"),
+    }
+    response: dict[str, Any] = {"segment": canonical_segment, "sources": {}}
+    for key, (dataset, column) in sections.items():
+        matching = [row for row in read_dataset(dataset) if row[column] == canonical_segment]
+        if not matching:
+            raise HTTPException(status_code=404, detail=f"Information absente pour {canonical_segment}: {key}")
+        response[key] = matching[0]
+        response["sources"][key] = DATASETS[dataset]["file"].name
+    return response
