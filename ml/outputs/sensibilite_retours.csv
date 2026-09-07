@@ -1,0 +1,2 @@
+k,seed,n_init,common_clients,ari,smallest_net_group_n,smallest_net_group_nonpositive_n,migrated_clients,migrated_pct,migrated_with_returns,migrated_without_returns
+5,42,100,5878,0.581043553732558,42,41,1671,28.428036747192927,1087,584
