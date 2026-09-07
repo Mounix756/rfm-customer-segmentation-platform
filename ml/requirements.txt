@@ -8,3 +8,4 @@ nbformat
 nbclient
 ipykernel
 pillow
+scipy
