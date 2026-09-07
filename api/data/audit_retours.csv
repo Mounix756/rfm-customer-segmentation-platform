@@ -1,0 +1,2 @@
+window_start,window_end,reference_date,common_clients,clients_with_returns,return_lines_common,return_lines_without_C_common,return_only_clients_excluded,return_only_amount_GBP_excluded,positive_C_lines_excluded,gross_amount_GBP,returns_GBP,returns_pct_gross,net_amount_GBP,clients_net_zero,clients_net_negative
+2009-12-01 07:45:00,2011-12-09 12:50:00,2011-12-10 12:50:00,5878,2511,18559,0,61,61050.920000000006,0,17685460.638,1031016.71,5.829741905532831,16654443.928,19,22
