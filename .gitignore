@@ -1,0 +1,2 @@
+# Données Excel brutes conservées uniquement en local.
+/ml/data/*.xlsx
