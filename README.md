@@ -6,8 +6,8 @@ de la fréquence et du montant des achats.
 ## Organisation
 
 - `ml/` : préparation des données, analyse RFM, entraînement et évaluation du
-  clustering, résultats et rapport.
-- `docs/` : sujet du TP et règles de contribution.
+  clustering et résultats.
+- `docs/` : sujet du TP, rapport de segmentation et règles de contribution.
 - `api/` et `frontend/` : dossiers prévus pour les futurs services et l’interface,
   pas encore présents dans le dépôt.
 
@@ -20,7 +20,7 @@ K-means et les recommandations marketing.
 - `ml/requirements.txt` : dépendances Python.
 - `ml/data/` : fichiers de données sources.
 - `ml/outputs/` : tables CSV et image des recommandations.
-- Le rapport PDF se trouve également dans `ml/`.
+- Le [rapport de segmentation](<docs/Min Rapport synthetique segmentation des clienteles.pdf>) se trouve dans `docs/`.
 
 Exécuter le notebook avec `ml/` comme répertoire de travail : ses chemins
 `data/` et `outputs/` sont relatifs à ce dossier.
