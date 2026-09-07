@@ -8,8 +8,8 @@ de la fréquence et du montant des achats.
 - `ml/` : préparation des données, analyse RFM, entraînement et évaluation du
   clustering et résultats.
 - `docs/` : sujet du TP, rapport de segmentation et règles de contribution.
-- `api/` et `frontend/` : dossiers prévus pour les futurs services et l’interface,
-  pas encore présents dans le dépôt.
+- `api/` : API FastAPI exposant les résultats de segmentation en JSON.
+- `frontend/` : dossier prévu pour la future interface, pas encore présent.
 
 ## Partie machine learning
 
@@ -27,3 +27,12 @@ Exécuter le notebook avec `ml/` comme répertoire de travail : ses chemins
 
 Le [sujet du TP](docs/tp2-f1-segmentation-clients-rfm.md) décrit les objectifs,
 les données et les livrables attendus.
+
+## API
+
+L’[API de segmentation](api/README.md) expose les clients RFM, la synthèse des
+segments et les recommandations marketing. Elle lit les CSV de `api/data/`,
+issus de `ml/outputs/`, sans entraîner de modèle.
+
+Consulter son README pour l’installation, le lancement local ou avec Docker,
+la mise à jour des données et la connexion à n8n.
