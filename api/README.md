@@ -8,7 +8,7 @@ Elle ne réalise ni entraînement ni prédiction pour de nouveaux clients.
 
 - `main.py` : application et routes HTTP.
 - `requirements.txt` : dépendances Python.
-- `data/` : copies des trois tables produites par le [notebook RFM](../ml/index.ipynb).
+- `data/` : copies des tables de résultats et de diagnostic produites par le [notebook RFM](../ml/index.ipynb).
 - `Dockerfile` et `docker-compose.yml` : lancement en conteneur.
 
 Les chemins sont résolus à partir de `main.py`, indépendamment du répertoire
@@ -18,9 +18,7 @@ Après une nouvelle exécution du notebook, actualiser les copies depuis la
 racine du dépôt :
 
 ```bash
-cp ml/outputs/recommandations_segments.csv api/data/
-cp ml/outputs/rfm_clients_segments.csv api/data/
-cp ml/outputs/tableau_synthese_segments.csv api/data/
+cp ml/outputs/*.csv api/data/
 ```
 
 Redémarrer ensuite l’API : les tables sont mises en cache en mémoire après
@@ -57,8 +55,13 @@ Documentation interactive :
 | `/recommandations-segments` | Recommandations marketing par segment |
 | `/rfm-clients-segments` | Clients et variables RFM avec segments attribués |
 | `/tableau-synthese-segments` | Synthèse statistique des segments |
+| `/evaluation-k` | Métriques pour chaque valeur de k |
+| `/choix-k` | Choix par critère statistique et choix commercial |
+| `/comparaison-segmentations` | Profils candidats et correspondance k=4 / k=5 |
+| `/sensibilite-retours` | Audit, comparaison, migrations, profils et stabilité achats/net |
+| `/segments/{segment}` | Synthèse, recommandation et effet des retours pour un segment |
 
-Chaque route de données retourne `dataset`, `description`, `source_file`,
+Les trois routes historiques, `/evaluation-k` et `/choix-k` retournent `dataset`, `description`, `source_file`,
 `statistics`, `pagination` et `data`.
 
 - `statistics.row_count` : nombre total de lignes.
@@ -68,10 +71,45 @@ Chaque route de données retourne `dataset`, `description`, `source_file`,
 - `pagination` : décalage, limite, nombre de lignes retournées et total.
 - `data` : lignes du CSV converties en JSON.
 
-Les statistiques portent sur la table entière, même lorsque la réponse est
-paginée. Les cellules vides deviennent `null` ; les valeurs interprétables
+Les statistiques portent sur toutes les lignes retenues avant pagination :
+la table entière sans filtre, ou les clients du segment demandé avec filtre. Les cellules vides deviennent `null` ; les valeurs interprétables
 comme nombres sont converties automatiquement, y compris les identifiants
 clients numériques. Les agrégats sur ces identifiants n’ont pas de sens métier.
+
+### Routes regroupées
+
+`/comparaison-segmentations` contient les sections `profils` et
+`correspondance_k4_k5`.
+
+`/sensibilite-retours` contient `audit`, `comparaison`, `migrations`,
+`par_segment`, `profils` et `stabilite`. Chaque section utilise l’enveloppe
+`dataset`, `description`, `source_file`, `statistics`, `pagination`, `data` et
+retourne sa table entière. Ces deux routes n’appliquent pas de pagination.
+L’audit précise la fenêtre et la date de référence des analyses de retours.
+
+Les colonnes `0` à `4` de la correspondance k=4 / k=5 sont les numéros des
+clusters à k=5. Les colonnes des migrations achats/net représentent les groupes
+nets alignés sur les segments initiaux : leurs noms ne valident pas de nouveaux
+profils métier. L’API restitue les mesures du notebook sans recalculer le clustering.
+
+`/segments/{segment}` retourne `segment`, `synthese`, `recommandation`,
+`effet_retours` et `sources` (un fichier source par section). Les trois sections
+métier sont des objets, sans enveloppe de pagination. Cette route ne retourne
+pas les transactions ni la liste des clients.
+
+### Filtrer les clients d’un segment
+
+Le paramètre `segment` de `/rfm-clients-segments` accepte les noms de la table
+de synthèse. La casse et les espaces en début/fin sont ignorés ; les accents
+restent nécessaires. La même règle s’applique à `/segments/{segment}`.
+Un segment inconnu retourne `404` et un filtre vide retourne `422`.
+
+```bash
+curl --get "http://127.0.0.1:8000/rfm-clients-segments" --data-urlencode "segment=À risque" --data-urlencode "limit=10"
+curl "http://127.0.0.1:8000/segments/Champions"
+curl "http://127.0.0.1:8000/evaluation-k"
+curl "http://127.0.0.1:8000/sensibilite-retours"
+```
 
 ### Pagination
 
@@ -83,7 +121,8 @@ sont retournées.
 curl "http://127.0.0.1:8000/rfm-clients-segments?limit=10&offset=0"
 ```
 
-Un CSV absent entraîne une réponse `404` sur la route concernée ; des paramètres
+Un CSV absent entraîne une réponse `404` sur la route concernée (y compris
+une route regroupée qui en dépend) ; des paramètres
 de pagination invalides entraînent une réponse `422`. La route `/` ne vérifie
 pas la présence des CSV.
 
@@ -130,3 +169,18 @@ durable, déclarer le réseau partagé dans la configuration Compose de n8n.
 
 L’API fournit les données ; aucun workflow n8n ni assistant conversationnel
 n’est inclus dans ce dossier.
+
+
+## Vérification
+
+Depuis `api/`, avec les dépendances installées :
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+Les tests démarrent un serveur HTTP temporaire sur une adresse locale et un
+port disponible, puis l’arrêtent. Ils vérifient les routes existantes et nouvelles,
+les correspondances avec les CSV, le filtrage avant pagination/statistiques,
+les noms accentués, les erreurs et le schéma OpenAPI. Aucune dépendance de test
+supplémentaire n’est nécessaire.

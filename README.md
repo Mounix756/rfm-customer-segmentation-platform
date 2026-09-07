@@ -49,7 +49,9 @@ les données et les livrables attendus.
 ## API
 
 L’[API de segmentation](api/README.md) expose les clients RFM, la synthèse des
-segments et les recommandations marketing. Elle lit les CSV de `api/data/`,
+segments, les recommandations marketing et les diagnostics de sélection de k
+et de sensibilité aux retours. Elle propose une fiche par segment et un filtre
+pour consulter les clients d’un groupe. Elle lit les CSV de `api/data/`,
 issus de `ml/outputs/`, sans entraîner de modèle.
 
 Consulter son README pour l’installation, le lancement local ou avec Docker,
