@@ -3,6 +3,29 @@
 Segmentation des clients du jeu UCI Online Retail II à partir de la récence,
 de la fréquence et du montant des achats.
 
+## Origine du projet et contributions
+
+Ce projet est issu d'un travail de groupe réalisé lors du **Togo AI Summer School**,
+autour de la segmentation clients RFM. Le travail collectif constitue le socle
+de l'analyse présentée dans le [notebook](ml/index.ipynb).
+
+Les membres du groupe sont :
+
+- AKAYA Eniwinéwé Henri
+- ALKISSANKDEI T. Djamal
+- BLAISE Mouné Tchoubou
+- LARE V. Donné
+- METO Kemi Gédéon
+- OPEKOU-DOUDOE Christian
+- TORA Dkawlma Emmanuel
+
+À partir de ce travail collectif, j'ai poursuivi le projet à titre personnel
+pour en faire une plateforme utilisable : approfondissement des analyses,
+ajout d'une API FastAPI et d'un workflow n8n avec un assistant conversationnel
+et une mémoire PostgreSQL. Une interface web est également prévue pour
+faciliter l'exploration des résultats et les échanges avec l'assistant ;
+elle n'est pas encore présente dans ce dépôt.
+
 ## Organisation
 
 - `ml/` : préparation des données, analyse RFM, entraînement et évaluation du
