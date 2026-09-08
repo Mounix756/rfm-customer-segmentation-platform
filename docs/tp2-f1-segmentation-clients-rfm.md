@@ -1,4 +1,4 @@
-# 3. TP 2 — Filière F1 : Segmentation clients RFM
+# 3. TP 2 - Filière F1 : Segmentation clients RFM
 
 > « Comprendre ses clients pour mieux les servir »
 
@@ -6,7 +6,7 @@
 
 ## 3.1 Contexte et problématique
 
-Un e-commerce de cadeaux basé au Royaume-Uni, dont de nombreux clients sont des grossistes, dispose de plus d'un million de lignes de transactions sur deux ans. La direction souhaite personnaliser ses campagnes marketing — courriels, promotions et relances — et réduire l'attrition. Elle ne dispose toutefois pas d'une typologie de ses clients.
+Un e-commerce de cadeaux basé au Royaume-Uni, dont de nombreux clients sont des grossistes, dispose de plus d'un million de lignes de transactions sur deux ans. La direction souhaite personnaliser ses campagnes marketing (courriels, promotions et relances) et réduire l'attrition. Elle ne dispose toutefois pas d'une typologie de ses clients.
 
 Quels clients fidéliser en priorité ? Lesquels relancer ? Comment reconnaître ceux qui deviennent inactifs ? Une meilleure connaissance des comportements d'achat doit permettre de proposer des actions adaptées.
 
@@ -52,11 +52,11 @@ Calculez le nombre de pays et la part du Royaume-Uni sur les données chargées,
 
 **Référence à citer :** Chen, D. (2012). *Online Retail II*. UCI Machine Learning Repository. [DOI : 10.24432/C5CG6D](https://doi.org/10.24432/C5CG6D). Données sous licence CC BY 4.0.
 
-## 3.4 Travail demandé — Déroulé indicatif
+## 3.4 Travail demandé - Déroulé indicatif
 
 Les durées proposées totalisent 4 h. Documentez vos décisions au fil du notebook et préparez les éléments du rapport pendant l'analyse.
 
-### Partie 1 — Nettoyage des transactions (50 min)
+### Partie 1 - Nettoyage des transactions (50 min)
 
 1. Chargez et concaténez les deux feuilles. Inspectez les dimensions, les types, la période couverte, les valeurs manquantes et les doublons potentiels.
 2. Analysez les annulations, les quantités négatives, les prix nuls ou négatifs et les identifiants clients manquants. Distinguez autant que possible les retours des anomalies.
@@ -68,16 +68,16 @@ Les durées proposées totalisent 4 h. Documentez vos décisions au fil du noteb
 
 **Attendu :** un tableau de transactions nettoyées et un bilan chiffré du nettoyage.
 
-### Partie 2 — Construction et transformation des variables RFM (45 min)
+### Partie 2 - Construction et transformation des variables RFM (45 min)
 
 1. Fixez une fenêtre d'observation commune et une date de référence, par exemple le lendemain de la dernière date de cette fenêtre. Documentez ces choix.
 2. Construisez une table contenant une ligne par client :
 
 | Variable | Définition attendue | Unité |
 | --- | --- | --- |
-| **R — Récence** | Nombre de jours entre la date de référence et le dernier achat valide du client. | Jours |
-| **F — Fréquence** | Nombre de factures d'achat distinctes dans la fenêtre d'observation. | Factures |
-| **M — Montant** | Somme des montants des lignes d'achat retenues pour le client. | £ |
+| **R - Récence** | Nombre de jours entre la date de référence et le dernier achat valide du client. | Jours |
+| **F - Fréquence** | Nombre de factures d'achat distinctes dans la fenêtre d'observation. | Factures |
+| **M - Montant** | Somme des montants des lignes d'achat retenues pour le client. | £ |
 
 3. Contrôlez l'unicité des clients et la validité des valeurs. Ne confondez pas fréquence d'achat, nombre de lignes et nombre d'articles.
 4. Visualisez les distributions et les corrélations des trois variables.
@@ -86,7 +86,7 @@ Les durées proposées totalisent 4 h. Documentez vos décisions au fil du noteb
 
 **Attendu :** une table RFM vérifiée, des visualisations avant et après transformation et une description du prétraitement.
 
-### Partie 3 — Clustering et choix de k (60 min)
+### Partie 3 - Clustering et choix de k (60 min)
 
 1. Appliquez K-means aux variables RFM transformées et standardisées. Documentez les paramètres et fixez une graine aléatoire pour permettre la reproduction.
 2. Comparez plusieurs valeurs de `k`, par exemple de 2 à 8, en calculant l'inertie et le score de silhouette.
@@ -97,7 +97,7 @@ Les durées proposées totalisent 4 h. Documentez vos décisions au fil du noteb
 
 **Attendu :** les graphiques de sélection, une comparaison des modèles candidats et une justification écrite du choix final. Aucun nombre de segments n'est imposé.
 
-### Partie 4 — Caractérisation et recommandations (60 min)
+### Partie 4 - Caractérisation et recommandations (60 min)
 
 1. Associez les segments aux clients, puis aux transactions pour analyser les pays et les produits.
 2. Pour chaque segment, calculez l'effectif, la part des clients, la contribution au chiffre d'affaires et les moyennes RFM. Ajoutez les médianes si elles éclairent les distributions.
@@ -109,7 +109,7 @@ Pour les parts de chiffre d'affaires, utilisez un périmètre commun et explicit
 
 **Attendu :** un tableau de synthèse, des profils comparables et des recommandations argumentées.
 
-### Partie 5 — Discussion critique et éthique (25 min)
+### Partie 5 - Discussion critique et éthique (25 min)
 
 Répondez aux questions de la section 3.7 dans le rapport. Appuyez votre discussion sur les résultats obtenus et distinguez les constats mesurés des hypothèses ou vérifications restant à mener.
 
@@ -146,15 +146,15 @@ Les noms ci-dessous sont illustratifs. Adaptez les lignes à vos résultats et i
 
 Indiquez la source des données, les dépendances nécessaires, les graines aléatoires et la procédure d'exécution. Les résultats du rapport doivent correspondre aux sorties du notebook.
 
-## 3.6 Grille d'évaluation — Sur 100 points
+## 3.6 Grille d'évaluation - Sur 100 points
 
 | Rubrique | Points |
 | --- | ---: |
-| Nettoyage des transactions — Partie 1 | 20 |
-| Variables RFM et transformations — Partie 2 | 20 |
-| Choix de k et clustering — Partie 3 | 25 |
-| Caractérisation et recommandations — Partie 4 | 20 |
-| Discussion critique et éthique — Partie 5 | 10 |
+| Nettoyage des transactions - Partie 1 | 20 |
+| Variables RFM et transformations - Partie 2 | 20 |
+| Choix de k et clustering - Partie 3 | 25 |
+| Caractérisation et recommandations - Partie 4 | 20 |
+| Discussion critique et éthique - Partie 5 | 10 |
 | Qualité du rapport et reproductibilité | 5 |
 | **Total** | **100** |
 
@@ -169,7 +169,7 @@ L'évaluation porte sur la rigueur des choix, leur justification et la cohérenc
 5. **Validation sans vérité terrain :** comment défendre la qualité des segments en l'absence d'étiquettes de référence ? Quelles validations complémentaires proposer avant un usage opérationnel ?
 6. **Éthique :** la personnalisation peut mener à une tarification différenciée. Quels garde-fous mettre en place pour éviter les pratiques injustes, la sollicitation excessive et l'utilisation abusive des données ?
 
-## 3.8 Bonus facultatif — Interrogation en langage naturel (+ 1 h)
+## 3.8 Bonus facultatif - Interrogation en langage naturel (+ 1 h)
 
 Ajoutez une couche d'interrogation des résultats associant une base vectorielle et un assistant destiné à l'équipe marketing.
 
