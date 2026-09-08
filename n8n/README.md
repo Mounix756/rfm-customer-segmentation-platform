@@ -20,7 +20,7 @@ PostgreSQL installé sur la machine n'est nécessaire avec le Compose fourni.
 | API FastAPI | Construction de l'image et chargement des CSV fournis dans `api/data/` | Garder `http://segmentation-api:8000` dans **Configuration** ; vérifier les routes à l'étape 9 |
 | PostgreSQL | Création de la base et du rôle `rfm_memory` au premier démarrage du volume | Créer le credential **Postgres**, hôte `postgres`, utilisateur et base `rfm_memory`, mot de passe choisi dans `.env` |
 | Historique | Conservation dans le volume `postgres_data` ; table créée au premier usage du nœud mémoire | Relier le credential à **Memoire session** et envoyer le même `sessionId` pour continuer une discussion |
-| DeepSeek | Le nœud est fourni, sans accès personnel | Créer et sélectionner son credential **DeepSeek** |
+| DeepSeek | Le nœud est fourni, sans accès personnel | Créer et sélectionner un credential **OpenAI** configuré pour DeepSeek |
 | Webhook | Validation de `message` et `sessionId`, authentification obligatoire | Créer le credential **Header Auth** avec `X-RFM-Token` et un jeton personnel distinct |
 
 Il faut donc **trois credentials sélectionnés dans trois nœuds** avant le premier
@@ -106,6 +106,7 @@ Après une réexécution du notebook, mettre à jour toutes les tables API :
 
 ```bash
 cp ml/outputs/*.csv api/data/
+cp ml/outputs/rfm_model.json api/data/
 ```
 
 L’API attend treize CSV, dont `evaluation_k.csv`, `choix_k.csv`,
@@ -260,20 +261,28 @@ dans un fichier versionné.
 2. Ouvrir la page [API keys](https://platform.deepseek.com/api_keys).
 3. Créer une clé dédiée à ce projet et la conserver dans un gestionnaire de secrets.
 4. Vérifier que le compte dispose du crédit ou de l’accès nécessaire aux appels API.
-5. Dans n8n, ouvrir le nœud **Modele DeepSeek**.
-6. Dans **Credential to connect with**, sélectionner **Create new credential**.
-7. Créer un credential de type **DeepSeek**, par exemple nommé `DeepSeek personnel`.
-8. Coller la clé dans **API Key**, enregistrer, puis sélectionner ce credential dans le nœud.
-9. Dans **Model**, vérifier `deepseek-v4-flash`. Si nécessaire, sélectionner ce
-   modèle dans la liste chargée après la connexion du credential.
-10. Enregistrer le workflow.
+5. Dans n8n, ouvrir **Modele DeepSeek**, de type **OpenAI Chat Model**.
+6. Créer un credential de type **OpenAI**, nommé par exemple `DeepSeek compatible`.
+7. Dans **API Key**, coller la clé **DeepSeek**. Dans **Base URL** du credential,
+   renseigner `https://api.deepseek.com`. Laisser l'organisation vide.
+8. Enregistrer et sélectionner ce credential dans le nœud.
+9. Vérifier le modèle `deepseek-v4-flash` et désactiver **Use Responses API**.
+10. Dans **Options**, conserver **Base URL** = `https://api.deepseek.com` et
+    **Extra Body** = `{"thinking":{"type":"disabled"}}`.
+11. Enregistrer, tester puis publier le workflow.
 
-Le nœud natif fournit déjà l’adresse de DeepSeek ; aucune clé OpenAI n’est
-nécessaire. La procédure de création du credential est décrite dans
-[la documentation n8n DeepSeek](https://github.com/n8n-io/n8n-docs/blob/main/docs/integrations/builtin/credentials/deepseek.md).
-Le nom du modèle a été choisi d’après le [guide actuel de DeepSeek](https://api-docs.deepseek.com/).
-Vérifier [les modèles disponibles](https://api-docs.deepseek.com/quick_start/pricing)
-avant de modifier ce choix.
+Le nom OpenAI désigne ici le protocole compatible du nœud. Les appels vont
+à DeepSeek : aucun compte, crédit ou clé OpenAI n'est nécessaire. Le mode
+thinking est explicitement désactivé pour les appels d'outils de l'agent.
+DeepSeek exige sinon de retransmettre `reasoning_content` entre les appels,
+ce que cette intégration ne conserve pas. Voir le
+[guide officiel du mode thinking](https://api-docs.deepseek.com/guides/thinking_mode/).
+
+Si le nœud présent dans votre instance est de type **DeepSeek Chat Model**,
+le remplacer par **OpenAI Chat Model** avec les paramètres ci-dessus et le
+relier au port **Chat Model** de l'agent. Conserver le nœud mémoire et le
+workflow pour préserver les clés de session. Modifier uniquement le prompt
+ne corrige pas cette erreur de protocole.
 
 Si le test de connexion ou un appel échoue, vérifier la clé, le crédit, le nom
 du modèle et les accès réseau. Ne coller aucune clé dans une capture d’écran,
@@ -613,6 +622,7 @@ Après une nouvelle analyse, depuis la racine du dépôt :
 
 ```bash
 cp ml/outputs/*.csv api/data/
+cp ml/outputs/rfm_model.json api/data/
 cd n8n
 docker compose up --build -d segmentation-api
 ```
@@ -668,6 +678,7 @@ nœuds peuvent modifier le comportement de l’agent.
 | Docker ne répond pas | Démarrer Docker Desktop ou le moteur ; vérifier `docker info` et les permissions |
 | Port déjà utilisé | Modifier le port dans `.env`, relancer Compose et adapter l’URL locale |
 | Credential manquant après import | Sélectionner les credentials Header Auth, DeepSeek et Postgres dans leurs nœuds |
+| `reasoning_content` manquant | Utiliser OpenAI Chat Model vers DeepSeek, Responses API désactivé, Extra Body `{"thinking":{"type":"disabled"}}` |
 | Modèle inconnu / 401 fournisseur | Vérifier la clé, l’accès au modèle et sa sélection dans le nœud DeepSeek |
 | Crédit insuffisant / 429 | Consulter le compte fournisseur ; limiter les appels et les répétitions |
 | Webhook 404 | Vérifier le chemin, le mode test en écoute ou la publication de l’URL de production |
@@ -743,3 +754,12 @@ puis les supprime à la fin. Il ne touche pas aux données de l’installation.
 Il utilise les images n8n 2.36.7 et PostgreSQL 16 Alpine, à télécharger au besoin.
 Aucune clé du modèle n’est nécessaire. La compréhension linguistique de DeepSeek
 reste à vérifier avec la recette à deux messages.
+
+Le paramétrage DeepSeek peut être vérifié dans le vrai nœud, sans appel au fournisseur :
+
+```bash
+docker run --rm --network none -v "$PWD/n8n:/workflow:ro" --entrypoint node docker.n8n.io/n8nio/n8n:2.36.7 /workflow/tests/deepseek-runtime.cjs
+```
+
+Exécuter cette commande depuis la racine du dépôt. Elle contrôle l'URL DeepSeek
+et le paramètre `thinking` transmis par le nœud compatible.

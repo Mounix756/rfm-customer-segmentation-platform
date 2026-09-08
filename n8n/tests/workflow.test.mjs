@@ -98,3 +98,11 @@ test('mémoire branchée et clés distinctes selon sessionId', () => {
   assert.notEqual(key('sessionA', 'workflow-A'), key('sessionA', 'workflow-B'));
   assert.equal(memory.parameters.tableName, 'rfm_chat_histories');
 });
+
+test('DeepSeek utilise Chat Completions sans thinking pour les appels outils', () => {
+  const model = nodes['Modele DeepSeek'];
+  assert.equal(model.type, '@n8n/n8n-nodes-langchain.lmChatOpenAi');
+  assert.equal(model.parameters.responsesApiEnabled, false);
+  assert.equal(model.parameters.options.baseURL, 'https://api.deepseek.com');
+  assert.deepEqual(JSON.parse(model.parameters.options.extraBody), { thinking: { type: 'disabled' } });
+});
