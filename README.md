@@ -22,9 +22,8 @@ Les membres du groupe sont :
 À partir de ce travail collectif, j'ai poursuivi le projet à titre personnel
 pour en faire une plateforme utilisable : approfondissement des analyses,
 ajout d'une API FastAPI et d'un workflow n8n avec un assistant conversationnel
-et une mémoire PostgreSQL. Une interface web est également prévue pour
-faciliter l'exploration des résultats et les échanges avec l'assistant ;
-elle n'est pas encore présente dans ce dépôt.
+et une mémoire PostgreSQL. Une interface web complète ces ajouts pour explorer les résultats, consulter
+les diagnostics et échanger avec l'assistant.
 
 ## Organisation
 
@@ -33,7 +32,7 @@ elle n'est pas encore présente dans ce dépôt.
 - `docs/` : sujet du TP, rapport de segmentation et règles de contribution.
 - `api/` : API FastAPI exposant les résultats de segmentation en JSON.
 - `n8n/` : workflow du chatbot marketing et guide d’installation.
-- `frontend/` : dossier prévu pour la future interface, pas encore présent.
+- `frontend/` : plateforme web React et serveur de connexion à FastAPI et n8n.
 
 ## Partie machine learning
 
@@ -99,3 +98,10 @@ les CSV sont fournis, Compose initialise l'API et PostgreSQL, puis trois
 credentials sont à configurer dans n8n. Après une mise à jour du dépôt,
 [appliquer aussi le prompt dans n8n](n8n/README.md#mettre-à-jour-un-workflow-déjà-importé)
 : le workflow importé n'est pas synchronisé automatiquement avec le fichier JSON.
+
+## Interface web
+
+[RFM studio](frontend/README.md) propose un tableau de bord, les fiches des
+segments, une exploration paginée des clients, les diagnostics du modèle et
+un assistant conversationnel. Son guide explique le lancement local et les
+variables serveur à configurer. Le jeton n8n reste hors du navigateur.

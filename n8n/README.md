@@ -560,7 +560,8 @@ l’installation fournie reste locale. Consulter **Executions** pour examiner
 un appel publié. Après une modification, enregistrer et publier la nouvelle version.
 Pour arrêter les appels, dépublier le workflow dans n8n.
 
-Un futur frontend devrait passer par un backend qui conserve le jeton du webhook.
+L'[interface web](../frontend/README.md) passe par un serveur Node qui conserve
+le jeton du webhook et associe les conversations à un cookie signé.
 Ne pas intégrer ce jeton ni la clé DeepSeek dans du JavaScript distribué aux navigateurs.
 Le workflow retourne du JSON ; l’interface doit afficher `answer` comme du texte
 ou du Markdown assaini, sans l’injecter directement comme HTML.
