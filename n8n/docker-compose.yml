@@ -1,6 +1,24 @@
 name: rfm-assistant
 
 services:
+  frontend:
+    build: ../frontend
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3001}:3001"
+    environment:
+      RFM_API_URL: http://segmentation-api:8000
+      N8N_WEBHOOK_URL: http://n8n:5678/webhook/rfm-chat
+      N8N_WEBHOOK_TOKEN: ${N8N_WEBHOOK_TOKEN:-}
+      SESSION_SECRET: ${SESSION_SECRET:?Définir SESSION_SECRET dans n8n/.env}
+      COOKIE_SECURE: "false"
+    depends_on:
+      segmentation-api:
+        condition: service_healthy
+      n8n:
+        condition: service_started
+    init: true
+    restart: unless-stopped
+
   segmentation-api:
     build: ../api
     ports:
