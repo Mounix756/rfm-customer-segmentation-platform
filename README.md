@@ -9,6 +9,7 @@ de la fréquence et du montant des achats.
   clustering et résultats.
 - `docs/` : sujet du TP, rapport de segmentation et règles de contribution.
 - `api/` : API FastAPI exposant les résultats de segmentation en JSON.
+- `n8n/` : workflow du chatbot marketing et guide d’installation.
 - `frontend/` : dossier prévu pour la future interface, pas encore présent.
 
 ## Partie machine learning
@@ -18,7 +19,7 @@ transactions, la construction des variables RFM, la comparaison des modèles
 K-means et les recommandations marketing.
 
 La sélection de `k` compare l’inertie, la silhouette, les indices
-Calinski–Harabasz et Davies–Bouldin, ainsi que la stabilité entre graines.
+Calinski-Harabasz et Davies-Bouldin, ainsi que la stabilité entre graines.
 Le compromis statistique est distingué du choix commercial de cinq segments.
 Une comparaison des profils à quatre et cinq segments documente ce choix ;
 son bénéfice commercial reste à valider par des campagnes.
@@ -56,3 +57,22 @@ issus de `ml/outputs/`, sans entraîner de modèle.
 
 Consulter son README pour l’installation, le lancement local ou avec Docker,
 la mise à jour des données et la connexion à n8n.
+
+
+## Assistant marketing n8n
+
+Le [guide n8n](n8n/README.md) explique l’installation locale avec Docker,
+l’import du [workflow](n8n/taiss-tp-final.json), la création des credentials
+DeepSeek et du jeton webhook, les tests et la publication. Le workflow interroge
+les résultats agrégés, les diagnostics de k et la sensibilité aux retours.
+Une mémoire de dix interactions, liée au `sessionId` obligatoire, permet de
+reprendre une discussion. L’historique est conservé dans PostgreSQL et survit aux redémarrages. Le
+Compose de `n8n/` démarre n8n, l’API et PostgreSQL ; le guide explique le
+mot de passe local et le credential Postgres à configurer.
+
+Pour démarrer depuis un clone sans réentraîner le modèle, suivre le
+[parcours d'installation complet](n8n/README.md#parcours-depuis-un-clone) :
+les CSV sont fournis, Compose initialise l'API et PostgreSQL, puis trois
+credentials sont à configurer dans n8n. Après une mise à jour du dépôt,
+[appliquer aussi le prompt dans n8n](n8n/README.md#mettre-à-jour-un-workflow-déjà-importé)
+: le workflow importé n'est pas synchronisé automatiquement avec le fichier JSON.
