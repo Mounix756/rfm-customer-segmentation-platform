@@ -114,3 +114,8 @@ docker compose up --build -d
 
 Préparer `n8n/.env` selon le [guide Docker du frontend](frontend/README.md#démarrer-avec-docker),
 puis ouvrir <http://127.0.0.1:3001>. Node.js n'est pas requis sur l'hôte.
+
+La vue **Classer un client** attribue un segment à partir de la récence, de la
+fréquence et du montant des achats positifs. FastAPI applique les paramètres
+figés du modèle exporté par le notebook. Consulter le [contrat de prédiction](api/README.md#classer-un-client)
+pour les unités, les limites et la synchronisation du modèle avec les données.

@@ -95,6 +95,14 @@ test("relais : contrat, secret serveur, isolation et refus des routes libres", a
     assert.equal(received[0].sessionId, received[1].sessionId);
     assert.notEqual(received[0].sessionId, received[2].sessionId);
     assert.notEqual(received[0].sessionId, received[3].sessionId);
+    const profile = { recency: 30, frequency: 8, monetary: 2500 };
+    const prediction = await fetch(base + 'predict', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profile),
+    });
+    assert.equal(prediction.status, 200);
+    assert.deepEqual(received.at(-1), { ...profile, token: undefined });
+    assert.equal((await fetch(base + 'predict')).status, 404);
   } finally {
     child.kill();
     upstream.closeAllConnections();

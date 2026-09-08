@@ -958,3 +958,27 @@ footer {
     animation: none !important;
   }
 }
+
+.prediction-form {
+  display: grid;
+  gap: 24px;
+  margin-top: 25px;
+}
+.prediction-form label {
+  display: grid;
+  gap: 9px;
+}
+.prediction-form label small {
+  color: #728075;
+}
+.prediction-form input {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid #cbd7c6;
+  border-radius: 8px;
+  color: #253b32;
+  background: #fafbf8;
+}
+.prediction-form button {
+  justify-self: start;
+}

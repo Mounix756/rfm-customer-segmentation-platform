@@ -184,3 +184,19 @@ node --test tests/server.test.mjs
 Le test du relais utilise un service simulé, sans clé fournisseur : validation,
 transmission du jeton côté serveur, isolation des sessions et routes autorisées.
 Un test réel du chatbot demande les credentials personnels configurés dans n8n.
+
+## Classer un client
+
+Ouvrir **Classer un client** dans la navigation. Saisir la récence en jours,
+la fréquence en factures distinctes et le montant des achats positifs en GBP,
+puis cliquer sur **Déterminer le segment**. Le résultat affiche le groupe,
+la recommandation documentée et les valeurs éventuellement plafonnées.
+Modifier un champ efface le résultat précédent pour éviter de l'associer à
+une autre saisie. Cette simulation ne crée aucun enregistrement client.
+
+La période d'entraînement et la date de référence sont affichées dans la vue.
+Employer les mêmes définitions et une fenêtre comparable : une fréquence
+mensuelle n'est pas directement comparable à celle de deux années d'achats.
+Le classement fonctionne sans n8n ni clé DeepSeek ; il appelle FastAPI via
+le relais `POST /api/predict`. Le bouton d'approfondissement utilise l'assistant
+uniquement sur demande, avec le nom du segment et sans les valeurs RFM saisies.

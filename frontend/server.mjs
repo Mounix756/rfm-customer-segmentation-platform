@@ -10,6 +10,7 @@ const secret = process.env.SESSION_SECRET || randomBytes(32).toString("hex");
 const sign = (value) =>
   createHmac("sha256", secret).update(value).digest("hex");
 const routes = new Set([
+  "model-info",
   "tableau-synthese-segments",
   "rfm-clients-segments",
   "recommandations-segments",
@@ -112,6 +113,34 @@ http
           answer: payload.answer,
           sessionId: body.sessionId,
         });
+      }
+      if (url.pathname === "/api/predict" && req.method === "POST") {
+        let raw = "";
+        for await (const chunk of req) {
+          raw += chunk;
+          if (Buffer.byteLength(raw) > 4096)
+            return json(res, 413, { error: "Requête trop volumineuse." });
+        }
+        let body;
+        try {
+          body = JSON.parse(raw);
+        } catch {
+          return json(res, 400, { error: "JSON invalide." });
+        }
+        const upstream = await fetch(new URL("/predict", api), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!upstream.ok)
+          return json(res, upstream.status, {
+            error:
+              upstream.status === 422
+                ? "Vérifiez les valeurs : récence entière positive ou nulle, fréquence entière positive et montant positif en livres sterling."
+                : "Le modèle de classement est indisponible.",
+          });
+        return json(res, 200, await upstream.json());
       }
       if (url.pathname.startsWith("/api/")) {
         const path = url.pathname.slice(5);

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import Prediction from "./Prediction.jsx";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -38,6 +39,7 @@ const pages = [
   ["overview", "Vue d’ensemble", LayoutDashboard],
   ["segments", "Segments & clients", Users],
   ["analysis", "Qualité du modèle", ChartNoAxesCombined],
+  ["prediction", "Classer un client", Users],
   ["chat", "Assistant marketing", MessageSquare],
 ];
 async function request(path, options = {}) {
@@ -60,7 +62,10 @@ function useData(path) {
       });
     return () => controller.abort();
   }, [path, version]);
-  return { ...(state.path === path ? state : { loading: true }), retry: () => setVersion((v) => v + 1) };
+  return {
+    ...(state.path === path ? state : { loading: true }),
+    retry: () => setVersion((v) => v + 1),
+  };
 }
 function State({ resource, children }) {
   if (resource.loading)
@@ -723,9 +728,7 @@ function Chat({ draft, clearDraft }) {
           <Send size={19} />
         </button>
       </form>
-      <p className="source">
-        {input.length}/2 000 caractères
-      </p>
+      <p className="source">{input.length}/2 000 caractères</p>
     </section>
   );
 }
@@ -846,6 +849,7 @@ export default function App() {
             />
           )}
           {page === "analysis" && <Analysis audit={audit} />}
+          {page === "prediction" && <Prediction ask={ask} />}
           <div hidden={page !== "chat"}>
             <Chat draft={draft} clearDraft={() => setDraft("")} />
           </div>
