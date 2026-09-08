@@ -724,15 +724,27 @@ function Chat({ draft, clearDraft }) {
         </button>
       </form>
       <p className="source">
-        {input.length}/2 000 caractères · Historique par conversation. Nouvelle
-        discussion ouvre un contexte distinct, sans supprimer l’historique
-        PostgreSQL.
+        {input.length}/2 000 caractères
       </p>
     </section>
   );
 }
 export default function App() {
-  const [page, setPage] = useState("overview");
+  const [page, setPage] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem("rfm-page");
+      return pages.some(([id]) => id === saved) ? saved : "overview";
+    } catch {
+      return "overview";
+    }
+  });
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("rfm-page", page);
+    } catch {
+      // Navigation remains available when browser storage is disabled.
+    }
+  }, [page]);
   const [selected, setSelected] = useState("");
   const [draft, setDraft] = useState("");
   const summary = useData("tableau-synthese-segments");
@@ -783,14 +795,6 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="sidebar-bottom">
-          <div className="project-label">
-            <i /> PROJET PÉDAGOGIQUE
-          </div>
-          <strong>Togo AI Summer School</strong>
-          <p>Un travail collectif, prolongé en plateforme d’analyse.</p>
-          <span>UCI Online Retail II</span>
-        </div>
       </aside>
       <div className="workspace">
         <header className="topbar">
