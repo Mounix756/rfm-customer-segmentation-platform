@@ -10,7 +10,7 @@ import time
 import unittest
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 from unittest.mock import patch
 
 API_DIR = Path(__file__).resolve().parents[1]
@@ -165,6 +165,36 @@ class ApiTests(unittest.TestCase):
             self.assertIn(route, schema['paths'])
         params = schema['paths']['/rfm-clients-segments']['get']['parameters']
         self.assertIn('segment', [p['name'] for p in params])
+
+    def test_prediction_http_and_validation(self):
+        def post(body):
+            req = Request(self.url + '/predict', data=json.dumps(body).encode(), headers={'Content-Type': 'application/json'})
+            try:
+                with urlopen(req) as response:
+                    return response.status, json.load(response)
+            except HTTPError as error:
+                return error.code, json.load(error)
+        row = csv_rows('rfm_clients_segments')[0]
+        body = dict(recency=int(row['Recency']), frequency=int(row['Frequency']), monetary=float(row['Monetary']))
+        status, result = post(body)
+        self.assertEqual(status, 200)
+        self.assertEqual(result['segment'], row['segment_name'])
+        self.assertEqual(result['model_id'], self.get('/model-info')[1]['model_id'])
+        for key, value in [('recency', -1), ('frequency', 0), ('frequency', 1.5), ('monetary', 0), ('monetary', -20), ('frequency', True), ('recency', '12')]:
+            self.assertEqual(post({**body, key: value})[0], 422)
+        self.assertEqual(post({**body, 'other': 1})[0], 422)
+        self.assertEqual(post({})[0], 422)
+
+    def test_prediction_matches_every_exported_client(self):
+        from prediction import load_model, predict
+        model = load_model()
+        for row in csv_rows('rfm_clients_segments'):
+            result = predict([float(row[k]) for k in model['features']], model)
+            self.assertEqual(result['cluster'], int(row['Cluster']))
+            self.assertEqual(result['segment'], row['segment_name'])
+        caps = model['preprocessing']['upper_caps']
+        self.assertEqual(predict([x * 2 for x in caps], model)['capped_features'], model['features'])
+        self.assertEqual(predict(caps, model)['cluster'], predict([x * 2 for x in caps], model)['cluster'])
 
 
 if __name__ == '__main__':

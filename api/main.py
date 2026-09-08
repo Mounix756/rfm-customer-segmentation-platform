@@ -6,6 +6,8 @@ from statistics import mean
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
+from pydantic import BaseModel, ConfigDict, Field
+from prediction import load_model, predict
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -190,6 +192,8 @@ def root() -> dict[str, Any]:
             "/comparaison-segmentations",
             "/sensibilite-retours",
             "/segments/{segment}",
+            "/model-info",
+            "/predict",
         ],
     }
 
@@ -276,3 +280,34 @@ def get_segment(segment: str) -> dict[str, Any]:
         response[key] = matching[0]
         response["sources"][key] = DATASETS[dataset]["file"].name
     return response
+
+
+# L'inférence utilise uniquement des paramètres numériques JSON, sans pickle.
+
+
+class ClientRFM(BaseModel):
+    model_config = ConfigDict(extra='forbid', strict=True, allow_inf_nan=False)
+    recency: int = Field(ge=0, le=1000000, description='Jours depuis le dernier achat valide à la date de référence.')
+    frequency: int = Field(ge=1, le=1000000000, description='Factures distinctes sur la fenêtre observée.')
+    monetary: float = Field(gt=0, le=1e15, description='Montant des achats positifs en GBP sur cette fenêtre.')
+
+
+def prediction_model():
+    try:
+        return load_model()
+    except (OSError, ValueError, KeyError, TypeError):
+        raise HTTPException(status_code=503, detail='Modèle de classement indisponible ou invalide.')
+
+
+@app.get('/model-info')
+def get_model_info():
+    model = prediction_model()
+    return {key: model[key] for key in ['model_id', 'algorithm', 'k', 'features', 'currency', 'policy', 'training']}
+
+
+@app.post('/predict')
+def predict_client(client: ClientRFM):
+    model = prediction_model()
+    result = predict([client.recency, client.frequency, client.monetary], model)
+    result['recommendation'] = next((row['Recommandation marketing'] for row in read_dataset('recommandations_segments') if row['Segment'] == result['segment']), None)
+    return result

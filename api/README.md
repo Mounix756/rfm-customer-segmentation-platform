@@ -1,12 +1,13 @@
 # API de segmentation marketing
 
 Cette API FastAPI expose les résultats CSV de la segmentation RFM en JSON,
-avec pagination et statistiques. Elle peut alimenter n8n et la future interface.
-Elle ne réalise ni entraînement ni prédiction pour de nouveaux clients.
+avec pagination et statistiques. Elle alimente n8n et l'interface web.
+Elle classe aussi un client via le modèle exporté, sans réentraînement.
 
 ## Organisation et données
 
 - `main.py` : application et routes HTTP.
+- `prediction.py` : prétraitement figé et affectation au centroïde le plus proche.
 - `requirements.txt` : dépendances Python.
 - `data/` : copies des tables de résultats et de diagnostic produites par le [notebook RFM](../ml/index.ipynb).
 - `Dockerfile` et `docker-compose.yml` : lancement en conteneur.
@@ -19,6 +20,7 @@ racine du dépôt :
 
 ```bash
 cp ml/outputs/*.csv api/data/
+cp ml/outputs/rfm_model.json api/data/
 ```
 
 Redémarrer ensuite l’API : les tables sont mises en cache en mémoire après
@@ -184,3 +186,59 @@ port disponible, puis l’arrêtent. Ils vérifient les routes existantes et nou
 les correspondances avec les CSV, le filtrage avant pagination/statistiques,
 les noms accentués, les erreurs et le schéma OpenAPI. Aucune dépendance de test
 supplémentaire n’est nécessaire.
+
+## Classer un client
+
+`POST /predict` applique le modèle final à des indicateurs RFM saisis, sans
+réentraînement ni ajout aux CSV. Exemple depuis un terminal :
+
+```bash
+curl --fail http://localhost:8000/predict \
+  -H 'Content-Type: application/json' \
+  --data '{"recency":30,"frequency":8,"monetary":2500}'
+```
+
+- `recency` : entier de 0 à 1 000 000, jours depuis le dernier achat valide.
+- `frequency` : entier de 1 à 1 000 000 000, nombre de factures distinctes.
+- `monetary` : nombre strictement positif, au plus 10^15, total des achats
+  positifs en GBP. Les retours ne sont pas déduits.
+
+Les trois valeurs sont obligatoires ; champs supplémentaires, booléens, chaînes
+et valeurs non finies sont rejetés (`422`). Les bornes supérieures sont des
+limites techniques, pas des plages de pertinence statistique.
+
+La réponse contient `segment`, `cluster`, `model_id`, `k`, `input`,
+`capped_features`, `distance_to_center`, `training`, `recommendation` et `notice`.
+La distance standardisée n'est pas une probabilité de confiance. Les indicateurs
+d'un client actuel ou calculés sur une fenêtre différente constituent une
+simulation dont la pertinence doit être évaluée.
+
+`GET /model-info` donne l'identifiant du modèle et sa période d'entraînement.
+Le modèle absent ou incompatible produit `503`. Le fichier
+`api/data/rfm_model.json` contient les plafonds au 99e percentile, la moyenne
+et l'échelle du StandardScaler, les centroïdes K-means et les noms des segments.
+L'API applique `log1p(min(valeur, plafond))`, standardise puis choisit le centroïde
+le plus proche. Aucun chargement de pickle et aucune dépendance scikit-learn
+ne sont nécessaires dans le service d'inférence.
+
+Le notebook exporte directement ces paramètres en dernière section. Le script
+`ml/export_model.py` permet aussi de reproduire le modèle depuis les CSV RFM
+avec k=5, seed=42 et n_init=100 ; il refuse l'export si une seule affectation
+diffère des CSV livrés. Utiliser l'environnement ML pour l'exécuter :
+
+```bash
+python ml/export_model.py
+cp ml/outputs/rfm_model.json api/data/
+```
+
+Après toute analyse complète, synchroniser ensemble les CSV et le modèle :
+
+```bash
+cp ml/outputs/*.csv api/data/
+cp ml/outputs/rfm_model.json api/data/
+cd n8n
+docker compose up --build -d segmentation-api frontend
+```
+
+Le modèle est chargé en cache. Reconstruire l'image recharge les paramètres.
+Les tests comparent les prédictions aux affectations de tous les clients des CSV.
