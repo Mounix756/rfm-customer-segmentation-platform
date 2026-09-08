@@ -89,7 +89,7 @@ DeepSeek et du jeton webhook, les tests et la publication. Le workflow interroge
 les résultats agrégés, les diagnostics de k et la sensibilité aux retours.
 Une mémoire de dix interactions, liée au `sessionId` obligatoire, permet de
 reprendre une discussion. L’historique est conservé dans PostgreSQL et survit aux redémarrages. Le
-Compose de `n8n/` démarre n8n, l’API et PostgreSQL ; le guide explique le
+Compose de `n8n/` démarre le frontend, n8n, l’API et PostgreSQL ; le guide explique le
 mot de passe local et le credential Postgres à configurer.
 
 Pour démarrer depuis un clone sans réentraîner le modèle, suivre le
@@ -105,3 +105,12 @@ credentials sont à configurer dans n8n. Après une mise à jour du dépôt,
 segments, une exploration paginée des clients, les diagnostics du modèle et
 un assistant conversationnel. Son guide explique le lancement local et les
 variables serveur à configurer. Le jeton n8n reste hors du navigateur.
+
+La plateforme complète se lance avec Docker depuis `n8n/` :
+
+```bash
+docker compose up --build -d
+```
+
+Préparer `n8n/.env` selon le [guide Docker du frontend](frontend/README.md#démarrer-avec-docker),
+puis ouvrir <http://127.0.0.1:3001>. Node.js n'est pas requis sur l'hôte.

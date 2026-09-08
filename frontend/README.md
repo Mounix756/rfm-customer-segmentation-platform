@@ -5,7 +5,67 @@ exploration des clients, diagnostics de clustering et assistant marketing.
 Les indicateurs proviennent de FastAPI. Aucune donnée de démonstration n'est
 substituée à une API indisponible.
 
-## Démarrer après un clone
+## Démarrer avec Docker
+
+Installer Docker et Docker Compose. Node.js n'est pas requis sur la machine.
+Le Compose de `n8n/` démarre les quatre services : frontend, FastAPI, n8n et PostgreSQL.
+Depuis la racine du dépôt, à la première installation :
+
+```bash
+cd n8n
+cp .env.example .env
+```
+
+Dans `n8n/.env`, renseigner `POSTGRES_PASSWORD` et `SESSION_SECRET` avec deux
+secrets distincts. Générer le secret de session avec `openssl rand -hex 32`.
+Renseigner `N8N_WEBHOOK_TOKEN` avec la valeur du credential Header Auth
+`X-RFM-Token` configuré dans n8n. Il peut rester vide pendant la configuration :
+les vues d'analyse fonctionnent, le chatbot affiche une erreur explicite.
+La clé DeepSeek se configure uniquement dans n8n.
+
+```bash
+docker compose config --quiet
+docker compose up --build -d
+docker compose ps
+```
+
+Ouvrir <http://127.0.0.1:3001> pour la plateforme et <http://localhost:5678>
+pour configurer n8n. Suivre le [guide n8n](../n8n/README.md) pour importer le
+workflow, configurer les trois credentials et publier le webhook.
+Après avoir renseigné le jeton dans `.env`, appliquer sa valeur au frontend :
+
+```bash
+docker compose up -d frontend
+```
+
+Pour une installation déjà configurée, compléter le `.env` existant avec
+`FRONTEND_PORT=3001`, `SESSION_SECRET` et `N8N_WEBHOOK_TOKEN`, sans le remplacer.
+Le fichier `frontend/.env` n'est pas utilisé par ce Compose.
+
+Le frontend appelle `http://segmentation-api:8000` et
+`http://n8n:5678/webhook/rfm-chat` sur le réseau Docker. Le navigateur utilise
+uniquement le port du frontend ; le jeton est injecté au serveur à l'exécution,
+jamais dans les fichiers JavaScript compilés. Modifier `FRONTEND_PORT` si 3001
+est occupé. Les ports restent liés à la machine locale.
+
+L'image compile React dans une étape de construction puis exécute seulement
+le serveur Node et les fichiers statiques avec l'utilisateur non privilégié
+`node`. Le contexte de construction exclut les fichiers `.env`, les dépendances
+locales et les sauvegardes. Le contrôle de santé vérifie la page web ; les
+connexions API et chatbot se vérifient séparément depuis l'interface.
+
+Pour reconstruire après une modification du frontend, depuis `n8n/` :
+
+```bash
+docker compose up --build -d frontend
+docker compose logs --tail=100 frontend
+```
+
+`docker compose stop` arrête la pile et `docker compose up -d` la redémarre.
+Conserver le secret de session et les volumes n8n/PostgreSQL pour maintenir
+la continuité des conversations. Ne pas utiliser `down -v` pour une simple mise à jour.
+
+## Démarrer sans Docker pour le frontend
 
 1. Installer Node.js 22.12 ou supérieur et npm.
 2. Suivre le [guide n8n](../n8n/README.md) pour démarrer FastAPI, PostgreSQL et
@@ -46,8 +106,9 @@ substituée à une API indisponible.
 
 Le serveur Node sert les fichiers compilés et relaie les requêtes `/api/` vers
 FastAPI ou n8n. Le chargement de `.env` utilise [l'option native de Node.js](https://nodejs.org/api/cli.html#--env-filefile).
-Les services Docker restent ceux de `n8n/docker-compose.yml` ; le frontend
-est lancé sur l'hôte et utilise leurs ports publiés.
+Dans ce mode, le frontend est lancé sur l'hôte et utilise les ports publiés
+des services Docker. Si le frontend Docker fonctionne déjà, l'arrêter avec
+`docker compose stop frontend` depuis `n8n/` pour libérer le port 3001.
 
 ## Développer
 

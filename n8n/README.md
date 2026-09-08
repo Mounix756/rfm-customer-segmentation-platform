@@ -57,7 +57,7 @@ flowchart LR
   Il ne réalise donc pas à lui seul tout le bonus vectoriel décrit dans le TP.
 
 Le parcours principal utilise le [Docker Compose fourni](docker-compose.yml),
-qui démarre n8n, l’API et PostgreSQL dans une installation locale distincte de toute installation n8n existante.
+qui démarre le frontend, n8n, l’API et PostgreSQL dans une installation locale distincte de toute installation n8n existante.
 Les ports sont liés à `127.0.0.1`. Cette configuration HTTP est destinée à une
 machine locale ; le déploiement public est abordé à la fin du guide.
 
@@ -113,7 +113,7 @@ L’API attend treize CSV, dont `evaluation_k.csv`, `choix_k.csv`,
 un `404` sur les routes qui en dépendent. Les données du TP sont historiques,
 et non un suivi du commerce en temps réel.
 
-## 4. Démarrer n8n, l’API et PostgreSQL avec Docker
+## 4. Démarrer la plateforme avec Docker
 
 Depuis la racine du dépôt :
 
@@ -127,7 +127,11 @@ passe personnel aléatoire long, sans espaces, par exemple généré par un
 gestionnaire de mots de passe. Le conserver : il sera aussi saisi dans le
 credential Postgres de n8n. Le fichier `.env` est ignoré par Git. Aucun mot de
 passe par défaut n’est fourni ; Compose refuse de démarrer tant que la valeur
-est vide. Puis, toujours depuis `n8n/` :
+est vide. Renseigner aussi `SESSION_SECRET` avec un secret distinct et stable
+(générable avec `openssl rand -hex 32`). Il sert à isoler les conversations du
+frontend. `N8N_WEBHOOK_TOKEN` reçoit la valeur du credential Header Auth de
+l'étape 8 ; il peut rester vide pendant la configuration initiale.
+Puis, toujours depuis `n8n/` :
 
 ```bash
 docker compose config --quiet
@@ -145,6 +149,9 @@ de l’API peuvent prendre plusieurs minutes au premier lancement.
 | `N8N_PORT` | `5678` | Port de n8n sur la machine |
 | `RFM_API_PORT` | `8000` | Port de l’API sur la machine |
 | `POSTGRES_PASSWORD` | À renseigner | Mot de passe de la base de conversations |
+| `FRONTEND_PORT` | `3001` | Port de la plateforme web |
+| `SESSION_SECRET` | À renseigner | Secret stable de signature des sessions web |
+| `N8N_WEBHOOK_TOKEN` | À renseigner pour le chatbot | Jeton Header Auth du webhook |
 
 Si un service occupe déjà un port, choisir par exemple `N8N_PORT=5679`
 ou `RFM_API_PORT=8001` dans `.env`, puis relancer `docker compose up -d`.
@@ -154,6 +161,7 @@ Ne pas lancer simultanément `api/docker-compose.yml` sur le même port 8000.
 
 Avec les valeurs par défaut :
 
+- plateforme web : <http://127.0.0.1:3001>
 - n8n : <http://localhost:5678>
 - documentation de l’API : <http://localhost:8000/docs>
 - description de l’API : <http://localhost:8000/>
@@ -169,7 +177,7 @@ curl --fail http://localhost:8000/sensibilite-retours
 Pour consulter les journaux depuis `n8n/` :
 
 ```bash
-docker compose logs --tail=100 n8n segmentation-api postgres
+docker compose logs --tail=100 frontend n8n segmentation-api postgres
 ```
 
 La base des conversations PostgreSQL utilise le volume `postgres_data`. Son
@@ -284,6 +292,9 @@ elle n’ajoute pas d’authentification aux routes FastAPI.
 5. Dans **Value**, saisir un jeton aléatoire long, distinct de la clé DeepSeek.
    Utiliser par exemple le générateur de son gestionnaire de mots de passe.
 6. Enregistrer et sélectionner ce credential dans le nœud Webhook.
+7. Copier la même valeur dans `N8N_WEBHOOK_TOKEN` du fichier local `n8n/.env`,
+   puis exécuter `docker compose up -d frontend` depuis `n8n/`. Le serveur du
+   frontend utilisera ce jeton pour appeler le workflow publié.
 
 Le nom de l’en-tête et sa valeur seront envoyés par le client HTTP. Le détail
 des méthodes est documenté dans [Webhook credentials](https://docs.n8n.io/integrations/builtin/credentials/webhook/).
