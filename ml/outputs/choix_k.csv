@@ -1,7 +1,7 @@
 Critère,k
 Silhouette (maximum),2
-Calinski–Harabasz (maximum),2
-Davies–Bouldin (minimum),2
+Calinski-Harabasz (maximum),2
+Davies-Bouldin (minimum),2
 Coude géométrique indicatif,4
 Compromis statistique (rangs moyens),2
 Choix commercial,5
