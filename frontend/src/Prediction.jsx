@@ -7,6 +7,7 @@ export default function Prediction({ ask }) {
     frequency: "",
     monetary: "",
   });
+  const [period, setPeriod] = useState({ observation_start:'', observation_end:'', reference_date:'', mode:'historical' });
   const [info, setInfo] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
@@ -19,7 +20,9 @@ export default function Prediction({ ask }) {
           throw Error(
             "Le modèle est indisponible. Vérifiez son export et le démarrage de l’API.",
           );
-        setInfo(await r.json());
+        const model = await r.json();
+        setInfo(model);
+        setPeriod({ observation_start: model.training.window_start.slice(0,10), observation_end: model.training.window_end.slice(0,10), reference_date: model.training.reference_date.slice(0,10), mode:'historical' });
       })
       .catch((e) => {
         if (!controller.signal.aborted) setError(e.message);
@@ -37,9 +40,7 @@ export default function Prediction({ ask }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          Object.fromEntries(
-            Object.entries(values).map(([k, v]) => [k, Number(v)]),
-          ),
+          { ...Object.fromEntries(Object.entries(values).map(([k,v]) => [k,Number(v)])), ...period },
         ),
         signal: AbortSignal.timeout(20000),
       });
@@ -67,6 +68,13 @@ export default function Prediction({ ask }) {
             Aucun nom ni identifiant personnel n’est nécessaire.
           </p>
           <form className="prediction-form" onSubmit={submit}>
+            <label>Cadre de classement<select aria-label="Cadre de classement" value={period.mode} disabled={busy || !info} onChange={e => {
+              const mode=e.target.value;
+              setPeriod(p=> mode==='historical' ? {mode,observation_start:info.training.window_start.slice(0,10),observation_end:info.training.window_end.slice(0,10),reference_date:info.training.reference_date.slice(0,10)} : {...p,mode}); setResult(null);
+            }}><option value="historical">Période historique du modèle</option><option value="simulation">Simulation sur une autre période</option></select></label>
+            {period.mode==='simulation' && <p className="notice">Simulation exploratoire : une autre durée ou saison peut changer le sens du classement. Les montants et fréquences ne sont pas annualisés. La pertinence hors période n'est pas validée.</p>}
+            {[['observation_start','Début des achats observés'],['observation_end','Fin des achats observés'],['reference_date','Date de calcul de la récence']].map(([key,label]) => <label key={key}><strong>{label}</strong><input type="date" aria-label={label} required value={period[key]} readOnly={period.mode==='historical'} disabled={busy || !info} onChange={e=>{setPeriod(p=>({...p,[key]:e.target.value}));setResult(null);}}/></label>)}
+            <p className="source">La date de référence suit la fin de la fenêtre. La récence doit placer le dernier achat dans cette fenêtre. La fréquence et le montant couvrent toute la fenêtre déclarée.</p>
             {[
               [
                 "recency",
@@ -113,7 +121,7 @@ export default function Prediction({ ask }) {
                 />
               </label>
             ))}
-            <button className="primary" disabled={busy}>
+            <button className="primary" disabled={busy || !info}>
               {busy ? (
                 <RefreshCw size={16} className="spin" />
               ) : (
@@ -133,6 +141,7 @@ export default function Prediction({ ask }) {
             <>
               <span className="eyebrow">SEGMENT ATTRIBUÉ</span>
               <h2 style={{ marginTop: 20 }}>{result.segment}</h2>
+              <p>{result.segment_definition}</p>
               <p>
                 {result.recommendation || "Aucune recommandation disponible."}
               </p>
@@ -152,7 +161,8 @@ export default function Prediction({ ask }) {
                   . Les valeurs extrêmes sont traitées comme à l’entraînement.
                 </p>
               )}
-              <p>{result.notice}</p>
+              <p className={result.temporal_context.matches_training ? '' : 'notice'}>{result.notice}</p>
+              <p className="source">Période saisie : {result.temporal_context.observation_start} au {result.temporal_context.observation_end} ({result.temporal_context.observation_days} jours). Référence : {result.temporal_context.reference_date}. Mode : {result.temporal_context.mode==='simulation'?'simulation':'historique'}.</p>
               <button
                 onClick={() =>
                   ask(

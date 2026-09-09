@@ -982,3 +982,11 @@ footer {
 .prediction-form button {
   justify-self: start;
 }
+
+.filter-details { border-block: 1px solid #e1e7dc; padding: 15px 0; margin: 18px 0; }
+.filter-details summary { cursor: pointer; font-weight: 600; }
+.filter-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; margin-top: 18px; }
+.filter-grid fieldset { border: 1px solid #dfe5d8; border-radius: 8px; min-width: 0; }
+.filter-grid label { display: flex; align-items: center; gap: 8px; font-size: 11px; margin: 10px 0; }
+.filter-grid input { width: 100%; min-width: 0; border: 1px solid #dfe5d8; padding: 8px; border-radius: 6px; }
+@media(max-width:760px) { .filter-grid { grid-template-columns: 1fr; } .toolbar { flex-wrap: wrap; } }

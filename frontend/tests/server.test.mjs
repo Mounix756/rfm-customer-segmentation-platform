@@ -6,11 +6,23 @@ import { once } from "node:events";
 
 test("relais : contrat, secret serveur, isolation et refus des routes libres", async () => {
   const received = [];
+  const queries = [];
   const upstream = http
     .createServer(async (req, res) => {
+      queries.push(req.url);
+      if (req.url.startsWith('/clients/export')) {
+        res.writeHead(200, {'Content-Type':'text/csv; charset=utf-8','X-Total-Count':'2'});
+        res.end('\ufeffCustomerID;Monetary\n12345;100\n12346;200\n');
+        return;
+      }
       let raw = "";
       for await (const part of req) raw += part;
       res.setHeader("Content-Type", "application/json");
+      if (req.url === '/predict' && JSON.parse(raw).observation_start === 'invalid') {
+        res.statusCode=422;
+        res.end(JSON.stringify({detail:[{msg:'Value error, La fenêtre est invalide.'}]}));
+        return;
+      }
       if (req.method === "POST") {
         received.push({
           ...JSON.parse(raw),
@@ -95,13 +107,30 @@ test("relais : contrat, secret serveur, isolation et refus des routes libres", a
     assert.equal(received[0].sessionId, received[1].sessionId);
     assert.notEqual(received[0].sessionId, received[2].sessionId);
     assert.notEqual(received[0].sessionId, received[3].sessionId);
-    const profile = { recency: 30, frequency: 8, monetary: 2500 };
+    const filtered = 'rfm-clients-segments?q=actifs&country=France&monetary_min=100&sort_by=Monetary&order=desc';
+    assert.equal((await fetch(base + filtered)).status,200);
+    const forwarded = new URL(queries.at(-1),'http://test');
+    for (const [key,value] of new URL(filtered,'http://test').searchParams) assert.equal(forwarded.searchParams.get(key),value);
+    const exported = await fetch(base + 'clients/export?country=France&monetary_min=100');
+    assert.equal(exported.status,200);
+    assert.match(exported.headers.get('content-type'),/text\/csv/);
+    assert.match(exported.headers.get('content-disposition'),/attachment/);
+    const csvBytes = Buffer.from(await exported.arrayBuffer());
+    assert.deepEqual([...csvBytes.subarray(0,3)],[0xef,0xbb,0xbf]);
+    assert.match(csvBytes.toString('utf8'),/12346;200/);
+    assert.equal((await fetch(base+'clients/filters')).status,200);
+    assert.equal((await fetch(base+'bundle-info')).status,200);
+    const profile = { recency: 30, frequency: 8, monetary: 2500,
+      observation_start:'2009-12-01',observation_end:'2011-12-09',reference_date:'2011-12-10',mode:'historical' };
     const prediction = await fetch(base + 'predict', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(profile),
     });
     assert.equal(prediction.status, 200);
     assert.deepEqual(received.at(-1), { ...profile, token: undefined });
+    const invalidPeriod = await fetch(base+'predict', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...profile,observation_start:'invalid'})});
+    assert.equal(invalidPeriod.status,422);
+    assert.deepEqual(await invalidPeriod.json(),{error:'La fenêtre est invalide.'});
     assert.equal((await fetch(base + 'predict')).status, 404);
   } finally {
     child.kill();

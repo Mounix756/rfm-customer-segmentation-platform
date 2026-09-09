@@ -11,6 +11,9 @@ const sign = (value) =>
   createHmac("sha256", secret).update(value).digest("hex");
 const routes = new Set([
   "model-info",
+  "bundle-info",
+  "clients/export",
+  "clients/filters",
   "tableau-synthese-segments",
   "rfm-clients-segments",
   "recommandations-segments",
@@ -133,13 +136,11 @@ http
           body: JSON.stringify(body),
           signal: AbortSignal.timeout(15000),
         });
-        if (!upstream.ok)
-          return json(res, upstream.status, {
-            error:
-              upstream.status === 422
-                ? "Vérifiez les valeurs : récence entière positive ou nulle, fréquence entière positive et montant positif en livres sterling."
-                : "Le modèle de classement est indisponible.",
-          });
+        if (!upstream.ok) {
+          const failure = await upstream.json().catch(() => ({}));
+          const detail = typeof failure.detail === "string" ? failure.detail : Array.isArray(failure.detail) ? failure.detail.map(e => String(e.msg).replace(/^Value error, /, "")).join(" ; ") : "Le classement est indisponible.";
+          return json(res, upstream.status, { error: detail });
+        }
         return json(res, 200, await upstream.json());
       }
       if (url.pathname.startsWith("/api/")) {
@@ -150,7 +151,7 @@ http
         )
           return json(res, 404, { error: "Route inconnue." });
         const target = new URL(`/${path}`, api);
-        for (const key of ["limit", "offset", "segment"])
+        for (const key of ["limit", "offset", "segment", "q", "country", "recency_min", "recency_max", "frequency_min", "frequency_max", "monetary_min", "monetary_max", "sort_by", "order"])
           if (url.searchParams.has(key))
             target.searchParams.set(key, url.searchParams.get(key));
         const upstream = await fetch(target, {
@@ -158,8 +159,12 @@ http
         });
         if (!upstream.ok)
           return json(res, upstream.status, {
-            error: "Données indisponibles pour cette sélection.",
+            error: upstream.status === 422 ? "Filtres invalides : vérifiez les bornes, les nombres et le tri." : "Données indisponibles pour cette sélection.",
           });
+        if (path === "clients/export") {
+          res.writeHead(200, { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="clients-selection.csv"', "Cache-Control": "no-store", "X-Total-Count": upstream.headers.get("X-Total-Count") || "0" });
+          return res.end(Buffer.from(await upstream.arrayBuffer()));
+        }
         return json(res, 200, await upstream.json());
       }
       if (req.method !== "GET")

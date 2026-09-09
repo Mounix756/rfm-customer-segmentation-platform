@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import ClientsTable from "./ClientsTable.jsx";
 import Prediction from "./Prediction.jsx";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -11,7 +12,6 @@ import {
   ArrowRight,
   Download,
   RefreshCw,
-  Search,
   Send,
   Plus,
   Layers,
@@ -216,7 +216,7 @@ function Overview({ summary, audit, navigate, ask }) {
               <section className="card">
                 <div className="section-title">
                   <div>
-                    <h3>Où se concentre la valeur ?</h3>
+                    <h3>Où se concentrent les achats ?</h3>
                     <p>Part du chiffre d’affaires par segment</p>
                   </div>
                   <span className="tag">Achats positifs</span>
@@ -282,11 +282,6 @@ function Overview({ summary, audit, navigate, ask }) {
   );
 }
 function Segments({ summary, selected, setSelected, ask }) {
-  const [query, setQuery] = useState("");
-  const [page, setPage] = useState(0);
-  const clients = useData(
-    `rfm-clients-segments?limit=25&offset=${page * 25}${selected ? "&segment=" + encodeURIComponent(selected) : ""}`,
-  );
   const detail = useData(
     selected
       ? "segments/" + encodeURIComponent(selected)
@@ -294,8 +289,7 @@ function Segments({ summary, selected, setSelected, ask }) {
   );
   function select(value) {
     setSelected(value);
-    setPage(0);
-    setQuery("");
+
   }
   return (
     <>
@@ -377,94 +371,7 @@ function Segments({ summary, selected, setSelected, ask }) {
           }
         </State>
       </section>
-      <section className="card">
-        <div className="section-title">
-          <div>
-            <h3>Explorer les clients</h3>
-            <p>RFM individuel, sans coordonnées personnelles</p>
-          </div>
-          <select
-            aria-label="Filtrer par segment"
-            value={selected}
-            onChange={(e) => select(e.target.value)}
-          >
-            <option value="">Tous les segments</option>
-            {summary.data?.data.map((r) => (
-              <option key={r.Segment}>{r.Segment}</option>
-            ))}
-          </select>
-        </div>
-        <div className="toolbar">
-          <label className="search">
-            <Search size={17} />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Rechercher dans cette page"
-            />
-          </label>
-          <button
-            disabled={!clients.data?.data?.length}
-            onClick={() =>
-              download(
-                clients.data.data.filter((r) =>
-                  JSON.stringify(r).toLowerCase().includes(query.toLowerCase()),
-                ),
-                "clients-page.csv",
-              )
-            }
-          >
-            <Download size={16} />
-            Exporter cette page
-          </button>
-        </div>
-        <State resource={clients}>
-          {(p) => (
-            <>
-              <Table
-                rows={p.data
-                  .filter((r) =>
-                    JSON.stringify(r)
-                      .toLowerCase()
-                      .includes(query.toLowerCase()),
-                  )
-                  .map((r) => ({
-                    Client: r.CustomerID,
-                    Segment: r.segment_name,
-                    "Récence (j)": r.Recency,
-                    Factures: r.Frequency,
-                    "Montant (£)": r.Monetary,
-                    Pays: r.CountryMode,
-                  }))}
-              />
-              <div className="pagination">
-                <span>
-                  {number(p.pagination.total)} clients · page {page + 1} sur{" "}
-                  {Math.max(1, Math.ceil(p.pagination.total / 25))}
-                </span>
-                <div>
-                  <button
-                    disabled={page === 0}
-                    onClick={() => setPage((v) => v - 1)}
-                  >
-                    Précédent
-                  </button>
-                  <button
-                    disabled={(page + 1) * 25 >= p.pagination.total}
-                    onClick={() => setPage((v) => v + 1)}
-                  >
-                    Suivant
-                  </button>
-                </div>
-              </div>
-              <p className="source">
-                Source : {p.source_file}. Recherche et export limités aux 25
-                lignes de la page.
-              </p>
-            </>
-          )}
-        </State>
-      </section>
+      <ClientsTable selected={selected} onSegmentChange={select} segments={summary.data?.data.map(r => r.Segment) || []} />
     </>
   );
 }
