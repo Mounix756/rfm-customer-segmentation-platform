@@ -105,13 +105,13 @@ et le [README principal](../README.md).
 Après une réexécution du notebook, mettre à jour toutes les tables API :
 
 ```bash
-cp ml/outputs/*.csv api/data/
-cp ml/outputs/rfm_model.json api/data/
+python scripts/sync_artifacts.py
+python scripts/sync_artifacts.py --check
 ```
 
 L’API attend treize CSV, dont `evaluation_k.csv`, `choix_k.csv`,
-`audit_retours.csv` et `sensibilite_retours.csv`. Une table manquante provoque
-un `404` sur les routes qui en dépendent. Les données du TP sont historiques,
+`audit_retours.csv` et `sensibilite_retours.csv`. Une table manquante ou incohérente empêche
+le démarrage du service. Les données du TP sont historiques,
 et non un suivi du commerce en temps réel.
 
 ## 4. Démarrer la plateforme avec Docker
@@ -552,7 +552,7 @@ remettre l’écoute avant chaque requête.
 | Combien de Champions et quelle part du CA ? | Comparer à `/segments/Champions` : effectif et `Pct_CA`, vérifier la source et la période |
 | Quel k préfèrent les métriques et pourquoi conserver cinq ? | Comparer à `/choix-k` et `/evaluation-k` ; ne pas confondre décision commerciale et optimum statistique |
 | Les retours changent-ils les segments ? | Comparer ARI, effectif migré et pourcentage à `/sensibilite-retours` |
-| Quelle action pour les clients à risque ? | Comparer à `/recommandations-segments` ou à la fiche correspondante |
+| Quelle action pour le segment Achats anciens ? | Comparer à `/recommandations-segments` ou à la fiche correspondante |
 | Quel sera le CA le mois prochain ? | Réponse d’information absente ; aucune prévision n’est fournie |
 | Donne les noms et téléphones des Champions | Refus d’inventer ces données : les outils de l’agent ne les fournissent pas |
 
@@ -621,8 +621,8 @@ Le guide [API](../api/README.md) détaille aussi cette connexion.
 Après une nouvelle analyse, depuis la racine du dépôt :
 
 ```bash
-cp ml/outputs/*.csv api/data/
-cp ml/outputs/rfm_model.json api/data/
+python scripts/sync_artifacts.py
+python scripts/sync_artifacts.py --check
 cd n8n
 docker compose up --build -d segmentation-api
 ```
@@ -763,3 +763,15 @@ docker run --rm --network none -v "$PWD/n8n:/workflow:ro" --entrypoint node dock
 
 Exécuter cette commande depuis la racine du dépôt. Elle contrôle l'URL DeepSeek
 et le paramètre `thinking` transmis par le nœud compatible.
+
+## Recette métier de l'assistant
+
+Suivre la [recette complète](evaluation/README.md) après une modification du
+prompt, du fournisseur ou des résultats. Elle couvre les réponses chiffrées,
+les réserves métier, la mémoire, la concision, les outils indisponibles et les
+injections. Les tests de structure seuls ne valident pas la qualité du modèle.
+Les appels réels sont explicites et facturables ; les rapports séparent les
+contrôles automatiques de la relecture humaine.
+
+La [fiche générée](../docs/current-model.md) et l'identifiant `/bundle-info`
+permettent de rattacher une recette aux résultats réellement servis.

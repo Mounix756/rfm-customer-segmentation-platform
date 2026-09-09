@@ -1,0 +1,12 @@
+services:
+  eval-api:
+    image: python:3.12-alpine
+    user: "65534:65534"
+    command: ["python", "/evaluation/fixture.py"]
+    environment:
+      SCENARIO: ${EVAL_SCENARIO:-outage}
+    volumes:
+      - ../api/data:/data:ro
+      - ./evaluation:/evaluation:ro
+    read_only: true
+    # Aucun port publié : seulement le workflow de recette sur le réseau Compose.

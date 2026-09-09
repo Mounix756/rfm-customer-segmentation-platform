@@ -40,9 +40,9 @@ test('rejeter corps absent, tableau, objet et message invalide avant le modèle'
 });
 
 test('préserver un texte valide et interdire la modification de l’URL par la requête', () => {
-  const result = run('Configuration', { body: { sessionId: 'session-test-001', message: '  À risque ?  ', apiBaseUrl: 'https://example.invalid' } });
+  const result = run('Configuration', { body: { sessionId: 'session-test-001', message: '  Achats anciens ?  ', apiBaseUrl: 'https://example.invalid' } });
   assert.equal(result.valid, true);
-  assert.equal(result.message, 'À risque ?');
+  assert.equal(result.message, 'Achats anciens ?');
   assert.equal(result.apiBaseUrl, 'http://segmentation-api:8000');
   assert.equal(run('Configuration', { body: { sessionId: 'session-test-001', message: 'x'.repeat(2000) } }).valid, true);
 });
@@ -53,10 +53,10 @@ test('outils agrégés et encodage du nom de segment', () => {
   const lookup = () => ({ first: () => ({ json: { apiBaseUrl: 'http://segmentation-api:8000' } }) });
   for (const tool of tools) {
     assert.equal(tool.parameters.method, 'GET');
-    const url = new Function('$', '$fromAI', 'return ' + tool.parameters.url.slice(3, -2))(lookup, () => 'À risque/../?');
+    const url = new Function('$', '$fromAI', 'return ' + tool.parameters.url.slice(3, -2))(lookup, () => 'Achats anciens/../?');
     assert.equal(url.startsWith('http://segmentation-api:8000/'), true);
     assert.equal(url.includes('/rfm-clients-segments'), false);
-    if (tool.name === 'FicheSegment') assert.equal(url, 'http://segmentation-api:8000/segments/' + encodeURIComponent('À risque/../?'));
+    if (tool.name === 'FicheSegment') assert.equal(url, 'http://segmentation-api:8000/segments/' + encodeURIComponent('Achats anciens/../?'));
   }
 });
 
