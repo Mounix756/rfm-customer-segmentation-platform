@@ -4,3 +4,6 @@
 # Caches Python locaux.
 __pycache__/
 *.py[cod]
+
+# Environnement Python local pour le notebook.
+/.venv/
