@@ -119,3 +119,17 @@ La vue **Classer un client** attribue un segment à partir de la récence, de la
 fréquence et du montant des achats positifs. FastAPI applique les paramètres
 figés du modèle exporté par le notebook. Consulter le [contrat de prédiction](api/README.md#classer-un-client)
 pour les unités, les limites et la synchronisation du modèle avec les données.
+
+## Interprétation et validation
+
+Les noms des segments décrivent des achats observés : un montant élevé ne
+prouve pas une marge élevée, un achat récent ne prouve pas qu'un client est
+nouveau, et une récence élevée ne mesure pas une attrition. Les campagnes
+proposées sont des hypothèses à tester avec un groupe témoin.
+
+- [Fiche générée de la livraison](docs/current-model.md) : chiffres, périodes et limites du modèle courant.
+- [Entraînement et synchronisation](docs/model-lifecycle.md) : livrer ensemble modèle, données et documentation.
+- [Recette de l'assistant](n8n/evaluation/README.md) : exactitude, mémoire, concision, pannes et injections.
+
+Le rapport PDF du travail collectif reste une archive pédagogique ; la fiche
+générée documente les résultats de la livraison utilisée par la plateforme.

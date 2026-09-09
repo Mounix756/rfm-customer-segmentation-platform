@@ -19,8 +19,8 @@ Après une nouvelle exécution du notebook, actualiser les copies depuis la
 racine du dépôt :
 
 ```bash
-cp ml/outputs/*.csv api/data/
-cp ml/outputs/rfm_model.json api/data/
+python scripts/sync_artifacts.py
+python scripts/sync_artifacts.py --check
 ```
 
 Redémarrer ensuite l’API : les tables sont mises en cache en mémoire après
@@ -107,7 +107,7 @@ restent nécessaires. La même règle s’applique à `/segments/{segment}`.
 Un segment inconnu retourne `404` et un filtre vide retourne `422`.
 
 ```bash
-curl --get "http://127.0.0.1:8000/rfm-clients-segments" --data-urlencode "segment=À risque" --data-urlencode "limit=10"
+curl --get "http://127.0.0.1:8000/rfm-clients-segments" --data-urlencode "segment=Achats anciens" --data-urlencode "limit=10"
 curl "http://127.0.0.1:8000/segments/Champions"
 curl "http://127.0.0.1:8000/evaluation-k"
 curl "http://127.0.0.1:8000/sensibilite-retours"
@@ -115,18 +115,19 @@ curl "http://127.0.0.1:8000/sensibilite-retours"
 
 ### Pagination
 
-`offset` vaut `0` par défaut et doit être positif ou nul. `limit` est facultatif
-et doit être supérieur ou égal à `1`. Sans limite, toutes les lignes restantes
-sont retournées.
+`offset` vaut `0` par défaut et doit être positif ou nul. La liste des clients
+utilise `limit=25` par défaut, avec un maximum de 500. Pour les autres tables,
+`limit` reste facultatif et doit être supérieur ou égal à 1 ; sans limite,
+toutes les lignes restantes sont retournées. Utiliser `/clients/export` pour
+exporter toute une sélection de clients.
 
 ```bash
 curl "http://127.0.0.1:8000/rfm-clients-segments?limit=10&offset=0"
 ```
 
-Un CSV absent entraîne une réponse `404` sur la route concernée (y compris
-une route regroupée qui en dépend) ; des paramètres
-de pagination invalides entraînent une réponse `422`. La route `/` ne vérifie
-pas la présence des CSV.
+Une livraison incomplète empêche le démarrage de l’API. Des paramètres
+de pagination invalides entraînent une réponse `422`. La route `/` décrit
+les endpoints ; `/bundle-info` identifie les données validées au démarrage.
 
 ## Lancement avec Docker
 
@@ -181,8 +182,7 @@ Depuis `api/`, avec les dépendances installées :
 python -m unittest discover -s tests -v
 ```
 
-Les tests démarrent un serveur HTTP temporaire sur une adresse locale et un
-port disponible, puis l’arrêtent. Ils vérifient les routes existantes et nouvelles,
+Les tests exercent les routes ASGI réelles sans ouvrir de port réseau. Ils vérifient les routes existantes et nouvelles,
 les correspondances avec les CSV, le filtrage avant pagination/statistiques,
 les noms accentués, les erreurs et le schéma OpenAPI. Aucune dépendance de test
 supplémentaire n’est nécessaire.
@@ -195,7 +195,7 @@ réentraînement ni ajout aux CSV. Exemple depuis un terminal :
 ```bash
 curl --fail http://localhost:8000/predict \
   -H 'Content-Type: application/json' \
-  --data '{"recency":30,"frequency":8,"monetary":2500}'
+  --data '{"recency":30,"frequency":8,"monetary":2500,"observation_start":"2009-12-01","observation_end":"2011-12-09","reference_date":"2011-12-10","mode":"historical"}'
 ```
 
 - `recency` : entier de 0 à 1 000 000, jours depuis le dernier achat valide.
@@ -203,7 +203,7 @@ curl --fail http://localhost:8000/predict \
 - `monetary` : nombre strictement positif, au plus 10^15, total des achats
   positifs en GBP. Les retours ne sont pas déduits.
 
-Les trois valeurs sont obligatoires ; champs supplémentaires, booléens, chaînes
+Les trois valeurs RFM et les trois dates sont obligatoires ; champs supplémentaires, booléens, chaînes à la place de nombres
 et valeurs non finies sont rejetés (`422`). Les bornes supérieures sont des
 limites techniques, pas des plages de pertinence statistique.
 
@@ -214,7 +214,7 @@ d'un client actuel ou calculés sur une fenêtre différente constituent une
 simulation dont la pertinence doit être évaluée.
 
 `GET /model-info` donne l'identifiant du modèle et sa période d'entraînement.
-Le modèle absent ou incompatible produit `503`. Le fichier
+Une livraison absente, altérée ou incohérente empêche le démarrage de l’API. Le fichier
 `api/data/rfm_model.json` contient les plafonds au 99e percentile, la moyenne
 et l'échelle du StandardScaler, les centroïdes K-means et les noms des segments.
 L'API applique `log1p(min(valeur, plafond))`, standardise puis choisit le centroïde
@@ -228,17 +228,73 @@ diffère des CSV livrés. Utiliser l'environnement ML pour l'exécuter :
 
 ```bash
 python ml/export_model.py
-cp ml/outputs/rfm_model.json api/data/
+python scripts/sync_artifacts.py
 ```
 
 Après toute analyse complète, synchroniser ensemble les CSV et le modèle :
 
 ```bash
-cp ml/outputs/*.csv api/data/
-cp ml/outputs/rfm_model.json api/data/
+python scripts/sync_artifacts.py
+python scripts/sync_artifacts.py --check
 cd n8n
 docker compose up --build -d segmentation-api frontend
 ```
 
 Le modèle est chargé en cache. Reconstruire l'image recharge les paramètres.
 Les tests comparent les prédictions aux affectations de tous les clients des CSV.
+
+## Contrat temporel du classement
+
+Consulter `/model-info` avant la saisie : les dates de l'exemple correspondent
+à la livraison actuelle et peuvent changer après réentraînement.
+`observation_start` et `observation_end` délimitent les jours inclus dans la
+fenêtre ; `reference_date` doit être strictement postérieure à sa fin.
+Les dates sont au format ISO `AAAA-MM-JJ`. La récence doit placer le dernier
+achat à l'intérieur de cette fenêtre, sinon la requête est rejetée (`422`).
+
+- `mode: "historical"` (défaut) exige exactement les dates d'entraînement.
+- `mode: "simulation"` autorise une autre période cohérente, avec une réserve
+  explicite dans le résultat. Aucun ajustement annuel n'est effectué.
+
+La réponse ajoute `temporal_context`, `segment_definition` et `bundle_id`.
+Des dates cohérentes ne prouvent pas la validité commerciale d'un classement
+sur une autre population. L'API ne peut pas vérifier que les RFM déclarés ont
+réellement été calculés sur les transactions de la période saisie.
+
+## Recherche et export de tous les clients
+
+`GET /rfm-clients-segments` applique les filtres avant pagination et statistiques :
+
+| Paramètre | Comportement |
+| --- | --- |
+| `q` | Recherche partielle sur identifiant, pays ou nom de segment, sans distinction de casse ni d'accents |
+| `segment`, `country` | Correspondance exacte, sans distinction de casse ni d'accents |
+| `recency_min`, `recency_max` | Bornes inclusives, en jours |
+| `frequency_min`, `frequency_max` | Bornes inclusives, en factures distinctes |
+| `monetary_min`, `monetary_max` | Bornes inclusives, en GBP |
+| `sort_by` | CustomerID, Recency, Frequency, Monetary, CountryMode ou segment_name |
+| `order` | asc ou desc ; les égalités conservent l'ordre des identifiants |
+| `limit`, `offset` | Taille de page (1 à 500, défaut 25) et décalage |
+
+Les filtres se cumulent. Une borne minimale supérieure au maximum produit `422`.
+`GET /clients/filters` fournit les pays et segments de toute la population.
+`GET /clients/export` applique les mêmes filtres et le même tri, mais exporte
+**toutes les lignes correspondantes**, indépendamment de `limit` et `offset`.
+Le CSV utilise UTF-8 avec BOM et un point-virgule ; les champs texte pouvant
+être interprétés comme des formules de tableur sont neutralisés.
+L'en-tête `X-Total-Count` indique le nombre de clients exportés.
+
+```bash
+curl --fail --get http://localhost:8000/clients/export \
+  --data-urlencode 'country=United Kingdom' \
+  --data-urlencode 'monetary_min=1000' \
+  --data-urlencode 'sort_by=Monetary' \
+  --data-urlencode 'order=desc' --output clients.csv
+```
+
+## Cohérence de la livraison
+
+La [procédure de synchronisation](../docs/model-lifecycle.md) valide les
+empreintes, affectations et agrégats, puis génère la [fiche du modèle](../docs/current-model.md).
+`GET /bundle-info` identifie la livraison effectivement chargée. Ne pas copier
+un CSV isolé dans une API en fonctionnement : synchroniser puis redémarrer.

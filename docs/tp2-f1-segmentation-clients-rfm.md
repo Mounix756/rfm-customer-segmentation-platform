@@ -102,7 +102,7 @@ Les durées proposées totalisent 4 h. Documentez vos décisions au fil du noteb
 1. Associez les segments aux clients, puis aux transactions pour analyser les pays et les produits.
 2. Pour chaque segment, calculez l'effectif, la part des clients, la contribution au chiffre d'affaires et les moyennes RFM. Ajoutez les médianes si elles éclairent les distributions.
 3. Identifiez les principaux pays et produits en précisant le critère utilisé : chiffre d'affaires, quantité ou nombre de clients.
-4. Attribuez à chaque segment un nom fondé sur son profil observé. « Champions », « Clients occasionnels », « À risque » ou « Clients endormis » sont des exemples, pas des catégories à imposer au modèle.
+4. Attribuez à chaque segment un nom fondé sur son profil observé. « Champions », « Clients occasionnels », « Achats anciens » ou « Achats anciens à faible montant » sont des exemples, pas des catégories à imposer au modèle.
 5. Proposez une recommandation marketing de une à deux lignes par segment. Reliez chaque action aux résultats et suggérez un indicateur permettant d'en mesurer l'effet.
 
 Pour les parts de chiffre d'affaires, utilisez un périmètre commun et explicite : le total des montants retenus des clients segmentés. Une récence élevée peut signaler une inactivité, mais ne prouve pas à elle seule une attrition.
@@ -134,7 +134,7 @@ Les noms ci-dessous sont illustratifs. Adaptez les lignes à vos résultats et i
 | Segment | Effectif | % CA | Récence moy. (jours) | Fréquence moy. (factures) | Montant moy. (£) | Top pays / produits |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
 | Champions, si ce profil est observé | … | … | … | … | … | … |
-| À risque, si ce profil est observé | … | … | … | … | … | … |
+| Achats anciens, si ce profil est observé | … | … | … | … | … | … |
 | Autre segment à nommer | … | … | … | … | … | … |
 
 **À remettre :**
@@ -176,8 +176,8 @@ Ajoutez une couche d'interrogation des résultats associant une base vectorielle
 Exemples de questions :
 
 - « Combien de clients appartiennent au segment Champions ? »
-- « Décris les clients endormis. »
-- « Quelle part du chiffre d'affaires provient des clients à risque ? »
+- « Décris le segment Achats anciens à faible montant. »
+- « Quelle part du chiffre d'affaires provient du segment Achats anciens ? »
 - « Quelle action recommandes-tu pour les clients occasionnels ? »
 
 Indexez les fiches descriptives des segments pour retrouver les informations pertinentes. Les réponses chiffrées doivent provenir des tables calculées : utilisez une lecture structurée ou une agrégation pour obtenir les valeurs exactes, puis citez le tableau, le segment et la période concernés.

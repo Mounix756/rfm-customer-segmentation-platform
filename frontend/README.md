@@ -132,8 +132,9 @@ utiliser `npm start` pour tester la compilation avec les services.
 
 - **Vue d'ensemble** : effectifs, CA positif, poids des retours, répartition du CA.
 - **Segments & clients** : sélection d'un segment, profils moyens et recommandations,
-  liste paginée de 25 clients. La recherche porte sur la page chargée ; l'export
-  porte sur les lignes filtrées de cette page.
+  liste paginée de 25 clients. La recherche, les filtres de pays et les bornes
+  RFM portent sur tous les clients. L'export reprend toutes les lignes
+  correspondantes, avec le même tri, même si elles occupent plusieurs pages.
 - **Qualité du modèle** : critères de choix de k, scores, stabilité, correspondance
   k=4/k=5 et sensibilité au montant net. Les chiffres restent accompagnés de leurs sources.
 - **Assistant marketing** : questions libres et suggestions contextuelles depuis
@@ -195,8 +196,11 @@ Modifier un champ efface le résultat précédent pour éviter de l'associer à
 une autre saisie. Cette simulation ne crée aucun enregistrement client.
 
 La période d'entraînement et la date de référence sont affichées dans la vue.
-Employer les mêmes définitions et une fenêtre comparable : une fréquence
-mensuelle n'est pas directement comparable à celle de deux années d'achats.
+Le mode historique fixe les trois dates à celles du modèle. Pour une autre
+période, sélectionner explicitement Simulation et renseigner ses dates.
+L'API rejette les périodes incohérentes et les récences situant le dernier
+achat hors de la fenêtre. Une fréquence mensuelle n'est pas directement
+comparable à celle de deux années d'achats ; aucun ajustement n'est effectué.
 Le classement fonctionne sans n8n ni clé DeepSeek ; il appelle FastAPI via
 le relais `POST /api/predict`. Le bouton d'approfondissement utilise l'assistant
 uniquement sur demande, avec le nom du segment et sans les valeurs RFM saisies.
