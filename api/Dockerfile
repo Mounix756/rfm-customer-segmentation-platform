@@ -8,8 +8,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY main.py prediction.py ./
+COPY main.py prediction.py client_query.py bundle.py ./
 COPY data ./data
+RUN python -c "from bundle import verify_bundle; verify_bundle('data')"
 
 EXPOSE 8000
 

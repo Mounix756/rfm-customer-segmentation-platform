@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "bundle_id": "bundle-229a31b580c84328",
+  "files": {
+    "rfm_clients_segments.csv": "9db163949aa579f28c5b2beb7b9810cbc3896d6218aa32901c1f5268f5915ae1",
+    "tableau_synthese_segments.csv": "742e3c34d6abe2a9fdf427ae0d748feb15d5b641f2b04dfe933129fa3a0f3065",
+    "recommandations_segments.csv": "ba7d34a686a173f6be49199a81e6952780cb204762fa8032d81b69f96e25f2e9",
+    "evaluation_k.csv": "27f3bc778278fd3d7bebe3c9baee9daea322bb7fc24edb1f89154a0ce7b7caed",
+    "choix_k.csv": "08b555d50c1dd2de4a387ecd940880e1c68b2c9d7c5c563c0136a30ad0c989ef",
+    "profils_k_candidats.csv": "0d83ca97d27851728a2f3c08fddeb9961daf7970c8cecfcfd99655b7fd4cb736",
+    "comparaison_k4_k5.csv": "7b0312af69b4df91c1875420b8f546f23c7ad46d8bc890eb54de9796d7a51c84",
+    "audit_retours.csv": "21d73959ecd13ded62186ffcb9dfeb89895dbe988d0cab159902e944fdc3b36d",
+    "sensibilite_retours.csv": "7c6e0787d458c49f637b7b375fd4d158ed3e571a5dcf429cee798c907da8e204",
+    "migrations_retours.csv": "ca82c5890c0bad5f9574ff18960ef65d90fb6a1111627bdc3ed05124e0fe040c",
+    "retours_par_segment.csv": "856b46cf43c06799aff6e35bddb8dd5392edcf65623aba53228d9a08123b0034",
+    "profils_politiques_retours.csv": "f1f43dd1955441572b6e8531e827bda08b3d6add1a341c35ccb85776dace4c94",
+    "stabilite_sensibilite_retours.csv": "0943401fcd16bec59be2392268919c1a6625bcff00457a5aae3eb5f2719318ff",
+    "rfm_model.json": "8302ac257fe0c11ebd97175139178c3cddb0af46f75f656d14e3e9956d76f7b3",
+    "model-card.md": "9276c03c7363be32a3dad62233d5cb84bd1dfb93cc100702e664211a633b6749"
+  }
+}

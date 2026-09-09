@@ -1,6 +1,6 @@
 Segment_gross,Clients,Clients_avec_retours,Retours_GBP,Clients_migres,Pct_migration
-Actifs rentables,1250,847,294487.42,629,50.32
+Achats anciens,1335,589,136089.7,340,25.468164794007492
+Achats anciens à faible montant,1580,247,13293.73,24,1.5189873417721518
+Achats récents occasionnels,1126,291,15734.23,92,8.170515097690942
+Actifs à montant élevé,1250,847,294487.42,629,50.32
 Champions,587,537,571411.63,586,99.82964224872232
-Endormis faible valeur,1580,247,13293.73,24,1.5189873417721518
-Nouveaux occasionnels,1126,291,15734.23,92,8.170515097690942
-À risque,1335,589,136089.7,340,25.468164794007492

@@ -56,11 +56,11 @@
     ]
   ],
   "segments": {
-    "2": "Actifs rentables",
     "0": "Champions",
-    "1": "Endormis faible valeur",
-    "4": "À risque",
-    "3": "Nouveaux occasionnels"
+    "1": "Achats anciens à faible montant",
+    "2": "Actifs à montant élevé",
+    "3": "Achats récents occasionnels",
+    "4": "Achats anciens"
   },
   "training": {
     "clients": 5878,
@@ -71,5 +71,12 @@
     "window_end": "2011-12-09 12:50:00",
     "reference_date": "2011-12-10 12:50:00"
   },
-  "model_id": "rfm-f81e29cdc221c8a2"
+  "segment_definitions": {
+    "Champions": "Groupe présentant les achats les plus fréquents et les montants moyens les plus élevés dans cette partition. Ce nom ne mesure ni fidélité future ni rentabilité.",
+    "Actifs à montant élevé": "Achats relativement récents et montant moyen élevé par rapport aux autres groupes, hors Champions. Les marges ne sont pas disponibles.",
+    "Achats anciens": "Dernier achat relativement ancien, avec des montants et fréquences supérieurs au groupe ancien à faible montant. Aucun départ futur n'est prédit.",
+    "Achats récents occasionnels": "Achats récents et fréquence relativement faible. Le groupe ne permet pas d'affirmer que le client est nouveau.",
+    "Achats anciens à faible montant": "Achats anciens, faible fréquence et faible montant moyen relativement à cette population. Aucun jugement sur la valeur personnelle du client."
+  },
+  "model_id": "rfm-3ab5423591563489"
 }

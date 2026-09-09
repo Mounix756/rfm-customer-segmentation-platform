@@ -1,6 +1,6 @@
 Segment,Effectif,Pct_CA,Recommandation marketing
-Champions,587,59.17947854585024,"Programme VIP, accès anticipé, cadeaux relationnels et demande d'avis/ambassadeurs. Objectif : protéger la valeur et encourager le bouche-à-oreille."
-Actifs rentables,1250,24.116585229539893,"Bundles, seuils de livraison gratuite et recommandations de produits complémentaires. Objectif : consolider une forte valeur déjà récente."
-À risque,1335,10.097933774836406,Campagne de réactivation personnalisée avec offre limitée dans le temps. Objectif : récupérer des clients ayant un historique utile mais une récence défavorable.
-Nouveaux occasionnels,1126,4.353307260460851,"Coupon de deuxième achat, onboarding court et sélection de best-sellers. Objectif : transformer l'achat récent en habitude."
-Endormis faible valeur,1580,2.252695189312603,"Relance automatisée peu coûteuse, puis réduction de la pression marketing si absence de réponse. Objectif : maîtriser le coût commercial."
+Champions,587,59.17947854585024,Tester un programme relationnel et des accès anticipés. Mesurer le réachat et les désabonnements face à un groupe témoin ; aucun gain de fidélité ou de marge n'est établi.
+Actifs à montant élevé,1250,24.116585229539893,Tester des recommandations de produits complémentaires. Mesurer le montant d'achat supplémentaire et le coût de contact face à un groupe témoin ; une hausse de chiffre d'affaires ne prouve pas une hausse de marge.
+Achats anciens,1335,10.097933774836406,Tester une relance sur un échantillon et comparer le taux de réachat à un groupe témoin. La récence élevée décrit l'historique ; elle ne prouve pas un abandon définitif.
+Achats récents occasionnels,1126,4.353307260460851,"Tester une sélection de produits complémentaires pour encourager un prochain achat. Mesurer le réachat à horizon fixé face à un groupe témoin, sans supposer qu'il s'agit du deuxième achat."
+Achats anciens à faible montant,1580,2.252695189312603,"Tester une relance peu coûteuse et limiter la pression de contact. Mesurer le réachat, les désabonnements et le coût par réponse avant toute généralisation."

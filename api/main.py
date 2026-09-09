@@ -1,12 +1,17 @@
 from collections import Counter
+from contextlib import asynccontextmanager
+from bundle import verify_bundle
 from csv import DictReader
 from functools import lru_cache
 from pathlib import Path
 from statistics import mean
-from typing import Any
+from typing import Any, Annotated, Literal
+from datetime import date
+from fastapi.responses import Response
+from client_query import ClientFilters, select_clients, export_csv
 
 from fastapi import FastAPI, HTTPException, Query
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from prediction import load_model, predict
 
 
@@ -44,10 +49,21 @@ for name, description in {
 }.items():
     DATASETS[name] = {"file": DATA_DIR / f"{name}.csv", "description": description}
 
+@asynccontextmanager
+async def lifespan(application):
+    # Refuser le démarrage sur un mélange de modèles, tables ou documentation.
+    application.state.bundle = verify_bundle(DATA_DIR)
+    for name in DATASETS:
+        load_dataset(name)
+    load_model()
+    yield
+
+
 app = FastAPI(
     title="API Segmentation Marketing",
     description="Expose les resultats RFM/segments en JSON pour n8n et les futurs assistants marketing.",
-    version="0.2.0",
+    version="0.3.0",
+    lifespan=lifespan,
 )
 
 
@@ -193,7 +209,10 @@ def root() -> dict[str, Any]:
             "/sensibilite-retours",
             "/segments/{segment}",
             "/model-info",
+            "/bundle-info",
             "/predict",
+            "/clients/export",
+            "/clients/filters",
         ],
     }
 
@@ -207,12 +226,32 @@ def get_recommandations_segments(
 
 
 @app.get("/rfm-clients-segments")
-def get_rfm_clients_segments(
-    segment: str | None = Query(default=None, min_length=1, description="Nom du segment ; casse ignorée, accents conservés."),
-    limit: int | None = Query(default=None, ge=1),
-    offset: int = Query(default=0, ge=0),
-) -> dict[str, Any]:
-    return dataset_response("rfm_clients_segments", limit, offset, segment=segment)
+def get_rfm_clients_segments(filters: Annotated[ClientFilters, Query()]):
+    rows = select_clients(read_dataset('rfm_clients_segments'), filters)
+    return {
+        'dataset': 'rfm_clients_segments', 'source_file': 'rfm_clients_segments.csv',
+        'description': 'Clients filtrés et triés avant pagination.',
+        'statistics': build_statistics(rows),
+        'pagination': {'offset': filters.offset, 'limit': filters.limit, 'total': len(rows), 'returned': len(rows[filters.offset:filters.offset+filters.limit])},
+        'data': rows[filters.offset:filters.offset+filters.limit],
+    }
+
+
+@app.get('/clients/export')
+def export_clients(filters: Annotated[ClientFilters, Query()]):
+    all_rows = read_dataset('rfm_clients_segments')
+    rows = select_clients(all_rows, filters)
+    content = export_csv(rows, list(all_rows[0]) if all_rows else [])
+    return Response(content, media_type='text/csv; charset=utf-8', headers={
+        'Content-Disposition': 'attachment; filename="clients-selection.csv"',
+        'X-Total-Count': str(len(rows)), 'Cache-Control': 'no-store',
+    })
+
+
+@app.get('/clients/filters')
+def client_filter_options():
+    rows = read_dataset('rfm_clients_segments')
+    return {'countries': sorted({r['CountryMode'] for r in rows}), 'segments': sorted({r['segment_name'] for r in rows})}
 
 
 @app.get("/tableau-synthese-segments")
@@ -279,6 +318,8 @@ def get_segment(segment: str) -> dict[str, Any]:
             raise HTTPException(status_code=404, detail=f"Information absente pour {canonical_segment}: {key}")
         response[key] = matching[0]
         response["sources"][key] = DATASETS[dataset]["file"].name
+    response['definition'] = prediction_model()['segment_definitions'][canonical_segment]
+    response['sources']['definition'] = 'rfm_model.json'
     return response
 
 
@@ -290,6 +331,20 @@ class ClientRFM(BaseModel):
     recency: int = Field(ge=0, le=1000000, description='Jours depuis le dernier achat valide à la date de référence.')
     frequency: int = Field(ge=1, le=1000000000, description='Factures distinctes sur la fenêtre observée.')
     monetary: float = Field(gt=0, le=1e15, description='Montant des achats positifs en GBP sur cette fenêtre.')
+    observation_start: str = Field(pattern=r'^\d{4}-\d{2}-\d{2}$', description='Début inclus de la fenêtre, AAAA-MM-JJ.')
+    observation_end: str = Field(pattern=r'^\d{4}-\d{2}-\d{2}$', description='Fin incluse de la fenêtre, AAAA-MM-JJ.')
+    reference_date: str = Field(pattern=r'^\d{4}-\d{2}-\d{2}$', description='Date à laquelle la récence est mesurée, AAAA-MM-JJ.')
+    mode: Literal['historical', 'simulation'] = 'historical'
+
+    @model_validator(mode='after')
+    def validate_period(self):
+        start, end, reference = [date.fromisoformat(v) for v in [self.observation_start, self.observation_end, self.reference_date]]
+        if start > end or reference <= end:
+            raise ValueError('La fenêtre doit être ordonnée et la référence postérieure à sa fin.')
+        # La date du dernier achat doit appartenir à la fenêtre déclarée.
+        if not (reference-end).days <= self.recency <= (reference-start).days:
+            raise ValueError('La récence place le dernier achat hors de la fenêtre déclarée.')
+        return self
 
 
 def prediction_model():
@@ -302,12 +357,27 @@ def prediction_model():
 @app.get('/model-info')
 def get_model_info():
     model = prediction_model()
-    return {key: model[key] for key in ['model_id', 'algorithm', 'k', 'features', 'currency', 'policy', 'training']}
+    return {**{key: model[key] for key in ['model_id', 'algorithm', 'k', 'features', 'currency', 'policy', 'training', 'segment_definitions']}, 'bundle_id': app.state.bundle['bundle_id'], 'temporal_contract': {'required': ['observation_start', 'observation_end', 'reference_date'], 'modes': ['historical', 'simulation'], 'rule': 'historical exige les dates du modèle ; toute autre période exige simulation'}}
 
 
 @app.post('/predict')
 def predict_client(client: ClientRFM):
     model = prediction_model()
+    expected = {name: str(model['training'][key])[:10] for name, key in [('observation_start','window_start'), ('observation_end','window_end'), ('reference_date','reference_date')]}
+    supplied = {name: getattr(client, name) for name in expected}
+    same_period = supplied == expected
+    if not same_period and client.mode != 'simulation':
+        raise HTTPException(status_code=422, detail='Période différente de l’entraînement : utiliser explicitement le mode simulation. Aucune extrapolation validée ni annualisation automatique.')
     result = predict([client.recency, client.frequency, client.monetary], model)
+    result['temporal_context'] = {'mode': client.mode, 'matches_training': same_period, **supplied,
+        'observation_days': (date.fromisoformat(client.observation_end)-date.fromisoformat(client.observation_start)).days+1}
+    result['notice'] = ('Simulation hors du périmètre validé : aucune garantie de pertinence pour cette période. ' if not same_period else '') + result['notice']
+    result['bundle_id'] = app.state.bundle['bundle_id']
+    result['segment_definition'] = model['segment_definitions'][result['segment']]
     result['recommendation'] = next((row['Recommandation marketing'] for row in read_dataset('recommandations_segments') if row['Segment'] == result['segment']), None)
     return result
+
+
+@app.get('/bundle-info')
+def get_bundle_info():
+    return app.state.bundle

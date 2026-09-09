@@ -24,6 +24,8 @@ def export_model(rfm, scaler, model, names, audit, output):
         'segments': {str(int(k)): v for k, v in names.items()},
         'training': { 'clients': len(rfm), 'seed': int(model.random_state), 'n_init': int(model.n_init), 'sklearn_version': sklearn.__version__, **{k: str(audit[k]) for k in ['window_start', 'window_end', 'reference_date']} },
     }
+    semantics = json.loads((Path(__file__).parent / 'segment_semantics.json').read_text())
+    payload['segment_definitions'] = {v['name']: v['description'] for v in semantics.values()}
     payload['model_id'] = 'rfm-' + hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:16]
     Path(output).write_text(json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + '\n')
     return payload
