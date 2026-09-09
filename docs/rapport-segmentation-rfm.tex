@@ -1,0 +1,210 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage[margin=2cm]{geometry}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{booktabs,tabularx,array}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\definecolor{rfmgreen}{HTML}{276B50}
+\hypersetup{colorlinks=true,urlcolor=rfmgreen,linkcolor=rfmgreen,pdftitle={Segmentation clients RFM},pdfauthor={Groupe Togo AI Summer School}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlist[itemize]{label=\textbullet,nosep,leftmargin=*}
+\setlist[enumerate]{nosep,leftmargin=*}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\fichier}[1]{\texttt{\small\detokenize{#1}}}
+
+\begin{document}
+\begin{center}
+{\LARGE\bfseries Segmentation clients RFM}\par
+{\large Mini-rapport synthétique}\par
+{\color{rfmgreen}Togo AI Summer School}\par
+\end{center}
+
+\textbf{Membres du groupe :} AKAYA Eniwinéwé Henri ; ALKISSANKDEI T. Djamal ;
+BLAISE Mouné Tchoubou ; LARE V. Donné ; METO Kemi Gédéon ;
+OPEKOU-DOUDOE Christian ; TORA Dkawlma Emmanuel.
+
+\textbf{Origine du projet.} L'analyse initiale résulte d'un travail collectif
+réalisé lors du Togo AI Summer School. À partir de ce socle, le porteur du dépôt
+a poursuivi le projet à titre personnel : approfondissement des diagnostics,
+ajout d'une API FastAPI, d'un assistant n8n avec mémoire PostgreSQL et d'une
+interface web. Ces extensions sont distinguées du travail initial du groupe.
+
+\section{Objectif et méthode}
+L'objectif est de regrouper les clients selon leurs achats observés afin de
+formuler des hypothèses de campagnes différenciées. La segmentation décrit
+l'historique ; elle ne prédit ni le départ d'un client ni sa rentabilité.
+
+Les deux feuilles du jeu \textit{UCI Online Retail II} sont concaténées. Le
+nettoyage supprime les doublons exacts, les lignes sans identifiant client ou
+date exploitable, les factures d'annulation et les quantités ou prix non
+positifs du périmètre principal. Les retours sont conservés séparément pour
+l'analyse de sensibilité. Les achats retenus couvrent le
+\textbf{1\textsuperscript{er} décembre 2009 au 9 décembre 2011}, sur
+\textbf{5\,878 clients}. La référence est le \textbf{10 décembre 2011}.
+
+Pour chaque client $i$, les indicateurs sont :
+\begin{itemize}
+\item $R_i$ : nombre de jours depuis son dernier achat valide à la date de référence ;
+\item $F_i$ : nombre de factures positives distinctes dans la fenêtre ;
+\item $M_i$ : somme des montants d'achats positifs, en livres sterling (GBP), sans déduction des retours.
+\end{itemize}
+Une faible récence signifie un achat récent, pas nécessairement un nouveau
+client. Le montant ne mesure pas la marge, car les coûts ne sont pas disponibles.
+
+Les trois variables sont plafonnées à leur 99\textsuperscript{e} percentile,
+transformées par $\log(1+x)$ puis standardisées :
+\[
+ z_{ij}=\frac{\log\!\left(1+\min(x_{ij},q_{0,99,j})\right)-\mu_j}{\sigma_j}.
+\]
+Les paramètres sont appris sur la population historique. Cette préparation
+réduit l'influence des valeurs extrêmes et évite que les montants dominent
+mécaniquement les distances. K-means utilise une graine fixée à 42 et
+100 initialisations. La livraison documente scikit-learn 1.9.0.
+
+\section{Choix du nombre de segments}
+Les valeurs de $k$ de 2 à 8 sont comparées avec l'inertie, la silhouette,
+Calinski-Harabasz, Davies-Bouldin, les tailles des groupes et la stabilité
+ARI entre dix graines. La silhouette, Calinski-Harabasz et Davies-Bouldin
+préfèrent ici \textbf{$k=2$}. Leur compromis par moyenne des rangs préfère
+également 2 ; le coude géométrique indicatif suggère \textbf{$k=4$}.
+
+Le choix final de \textbf{$k=5$ est commercial}, et non un optimum statistique
+démontré. Les profils et la matrice de correspondance entre $k=4$ et $k=5$
+permettent d'examiner les différences observées. L'intérêt d'une campagne
+supplémentaire reste à mesurer face à une stratégie à quatre groupes.
+
+\newpage
+\section{Résultats et propositions marketing}
+Le montant total des achats positifs retenus est de
+\textbf{17\,685\,460,64 GBP}. Les parts ci-dessous utilisent ce même dénominateur.
+Les noms des groupes sont relatifs à cette partition et décrivent leurs profils
+moyens ; ils ne caractérisent pas uniformément chaque client du groupe.
+
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.35}
+\begin{tabularx}{\textwidth}{@{}Yrrrr@{}}
+\toprule
+\textbf{Segment} & \textbf{Clients} & \textbf{CA (\%)} & \textbf{R (j)} & \textbf{F} \\
+\midrule
+Champions & 587 & 59,18 & 18,00 & 28,56 \\
+Actifs à montant élevé & 1\,250 & 24,12 & 58,36 & 8,56 \\
+Achats anciens & 1\,335 & 10,10 & 303,15 & 3,56 \\
+Achats récents occasionnels & 1\,126 & 4,35 & 32,30 & 2,50 \\
+Achats anciens à faible montant & 1\,580 & 2,25 & 416,98 & 1,23 \\
+\bottomrule
+\end{tabularx}
+\end{center}
+{\small R et F : moyennes de récence et de fréquence. Les pourcentages sont arrondis.
+Source : \fichier{tableau_synthese_segments.csv}.}
+
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\textwidth}{@{}Yr@{}}
+\toprule
+\textbf{Segment} & \textbf{Montant moyen (GBP)} \\
+\midrule
+Champions & 17\,829,92 \\
+Actifs à montant élevé & 3\,412,10 \\
+Achats anciens & 1\,337,73 \\
+Achats récents occasionnels & 683,75 \\
+Achats anciens à faible montant & 252,15 \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Les Champions représentent environ 10\,\% des clients et 59,18\,\% du montant
+positif. Cette concentration justifie une attention particulière, sans prouver
+une marge supérieure ou une fidélité future. Les achats anciens ne constituent
+pas, à eux seuls, une preuve d'attrition. De même, les achats récents
+occasionnels ne renseignent pas la date du premier achat du client.
+
+\textbf{Actions proposées, à tester plutôt qu'à considérer comme acquises :}
+\begin{enumerate}
+\item \textbf{Champions :} tester un programme relationnel et des accès anticipés.
+Mesurer le réachat et les désabonnements face à un groupe témoin.
+\item \textbf{Actifs à montant élevé :} proposer des produits complémentaires.
+Comparer le montant supplémentaire et le coût de contact ; une hausse de CA
+ne suffit pas à démontrer une hausse de marge.
+\item \textbf{Achats anciens :} tester une relance sur un échantillon et comparer
+le taux de réachat à celui d'un groupe témoin.
+\item \textbf{Achats récents occasionnels :} encourager un prochain achat par
+une sélection pertinente, sans supposer qu'il s'agit du deuxième achat.
+\item \textbf{Achats anciens à faible montant :} limiter la pression de contact
+et tester une relance peu coûteuse. Mesurer le réachat, les désabonnements et
+le coût par réponse avant généralisation.
+\end{enumerate}
+
+Pour comparer les stratégies à quatre et cinq segments, les groupes de test
+devraient être randomisés, avec un budget, un horizon et une pression de
+contact comparables. Le bénéfice commercial ne sera établi qu'après mesure,
+par exemple de la conversion ou de la marge incrémentale si les coûts sont
+collectés. Aucun résultat de campagne n'est disponible dans ce projet.
+
+\newpage
+\section{Vérification de l'effet des retours}
+Une seconde segmentation utilise le montant net sur les \textbf{mêmes clients},
+avec la même fenêtre, les mêmes R et F et $k=5$. Les lignes à quantité négative
+et prix positif sont déduites du montant, qu'elles portent ou non un numéro
+de facture commençant par C. Les annulations à quantité positive restent
+ambiguës et ne sont pas transformées arbitrairement en montants négatifs.
+Les clients ayant uniquement des retours sont hors de la population comparée.
+
+Les plafonds et la standardisation appris sur les achats positifs restent
+figés. La transformation du montant net conserve son signe :
+\[
+ g(M)=\operatorname{sign}(M)\log(1+|M|).
+\]
+La valeur absolue intervient uniquement dans le logarithme : les montants
+nets négatifs ne deviennent pas des dépenses positives. K-means est
+réentraîné sur cette variante. Les groupes sont appariés en maximisant les
+clients communs avant de compter les migrations.
+
+Les retours retenus représentent \textbf{1\,031\,016,71 GBP}, soit
+\textbf{5,83\,\%} des achats positifs. L'ARI entre les deux partitions vaut
+\textbf{0,5810} et \textbf{1\,671 clients (28,43\,\%)} changent de groupe
+après appariement. Les retours modifient donc la partition dans ce protocole.
+Les répétitions sur dix graines documentent la sensibilité aux initialisations ;
+elles ne constituent ni un intervalle de confiance ni un test de significativité.
+
+Cette expérience isole l'effet monétaire : les retours ne sont pas rapprochés
+facture par facture et peuvent concerner des achats antérieurs à la fenêtre.
+Des clients sans retour peuvent aussi migrer lorsque les centres changent.
+Les noms alignés des groupes nets sont des repères, pas des profils métier validés.
+
+\section{Extensions de la plateforme et limites}
+L'API sert les résultats et classe un profil RFM par proximité aux centroïdes
+figés, sans réentraînement ni ajout aux données. Les trois dates de la fenêtre
+et de référence sont obligatoires. Le mode historique exige les dates du
+modèle ; une autre période impose une simulation explicite, sans annualisation
+ni probabilité de confiance. La cohérence des dates ne garantit pas la
+pertinence sur une autre population.
+
+L'interface permet la recherche, le filtrage et l'export global des clients.
+L'assistant n8n consulte les résultats agrégés et utilise une mémoire
+PostgreSQL associée à la session. Une recette de 14 scénarios couvre notamment
+les chiffres, la concision, la mémoire, les pannes et les injections. Les tests
+techniques ne remplacent pas une recette réelle des réponses du fournisseur.
+La synchronisation contrôle le modèle, les CSV et la fiche documentaire avant livraison.
+
+Sans vérité terrain, les indices internes, la stabilité et les profils ne
+prouvent pas l'efficacité commerciale. La saisonnalité, l'ancienneté des
+clients, les grossistes et les choix de nettoyage peuvent influencer les
+résultats. L'usage doit limiter les sollicitations, permettre le retrait,
+protéger les données individuelles et éviter les traitements discriminatoires
+ou les prix personnalisés injustifiables.
+
+\textbf{Traçabilité.} Résultats issus de \fichier{ml/index.ipynb}, des tables de
+\fichier{ml/outputs/} et de \fichier{docs/current-model.md}.
+Modèle : \fichier{rfm-3ab5423591563489}. Livraison :
+\fichier{bundle-229a31b580c84328}. Ce rapport constitue une synthèse de cette
+livraison ; ses chiffres doivent être revus après un nouvel entraînement.
+\end{document}
