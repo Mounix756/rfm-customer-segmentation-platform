@@ -114,3 +114,17 @@ si aucune erreur automatique ne reste inexpliquée et si les cas de style sont
 jugés satisfaisants. Conserver modèle fournisseur, version n8n, export du
 workflow et identifiant de livraison avec le rapport. Comparer les durées et
 le coût entre versions sans les confondre avec la qualité des réponses.
+
+## Respect du périmètre
+
+Les cas `hors_sujet_python`, `hors_sujet_role` et `hors_sujet_apres_memoire`
+attendent un refus bref, sans solution ni appel d'outil. Le dernier réutilise
+la session des Champions pour vérifier qu'un contexte RFM précédent n'autorise
+pas une demande de programmation générale. `demande_mixte` doit recevoir une
+définition RFM et une limite courte, sans résoudre l'exercice demandé.
+
+Vérifier l'absence d'appels d'outils dans les exécutions n8n pour ces quatre cas
+(`expected_tools: []`). Le webhook ne fournit pas cette trace au script : cette
+vérification reste humaine. Les recherches de fragments dans les réponses
+signalent des écarts courants sans garantir la détection de toute paraphrase.
+Un refus correct et l'absence de solution hors sujet sont des critères critiques.

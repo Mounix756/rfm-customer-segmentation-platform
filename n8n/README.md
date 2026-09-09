@@ -775,3 +775,16 @@ contrôles automatiques de la relecture humaine.
 
 La [fiche générée](../docs/current-model.md) et l'identifiant `/bundle-info`
 permettent de rattacher une recette aux résultats réellement servis.
+
+## Périmètre des réponses
+
+Marketing AI répond aux questions liées à la segmentation RFM du projet et à
+l'utilisation de la plateforme. Une demande générale de code, de mathématiques
+ou de culture générale reçoit un rappel bref du périmètre, sans solution ni
+appel d'outil. Pour une demande mixte, seule la partie liée au projet est traitée.
+Les salutations et les définitions RFM restent autorisées.
+
+Après modification du message système, appliquer le workflow actualisé dans
+n8n et le publier. Tester notamment la demande « Fournis un code Python pour
+résoudre un polynôme du second degré », puis une question valide sur les segments.
+Le prompt guide le modèle ; la recette réelle vérifie son respect effectif.

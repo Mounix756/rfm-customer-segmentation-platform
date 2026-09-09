@@ -58,6 +58,11 @@ def grade(case, answer, ref):
     if kind == 'k':
         require(contains(ref['commercial_k']) and 'commercial' in t,'Choix commercial absent')
         require(contains(ref['statistical_k']) and ('statist' in t or 'metrique' in t),'Distinction statistique absente')
+    if kind == 'off_topic':
+        require(('rfm' in t or 'segmentation' in t) and any(w in t for w in ['uniquement', 'hors', 'cadre', 'perimetre', 'limite']), 'Rappel du périmètre absent')
+        require(not any(w in t for w in ['```', 'import math', 'def ', 'math.sqrt', 'discriminant', 'b**2', 'racine', 'delta =']), 'Solution hors sujet fournie')
+    for fragment in case.get('forbidden_fragments', []):
+        require(fold(fragment) not in t, 'Contenu hors périmètre détecté')
     if kind == 'greeting': require('bonjour' in t and not any(w in t for w in ['silhouette','recommandations','segments','je peux']),'Accueil non minimal')
     if kind == 'definition': require(all(w in t for w in ['recence','frequence','montant']),'Définition incomplète')
     if kind in ['unknown','profit','newness','outage']:
